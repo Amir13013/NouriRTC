@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Annonce d'Emploi</title>
+    <link rel="stylesheet" href="css/Advertisements_Board.css">
+</head>
+<body>    
+    <header>
+      <h1>Ajout d'annonce</h1>
+    </header>
+
+    <main>   
+        <h3>Nom de l'entreprise</h3>
+        <input id="name" type="text" placeholder="Nom entreprise" required>
+
+        <h3>Nom du Poste</h3>
+        <input id="job" type="text" placeholder="Intitulé du poste" required>
+        
+        <article>
+            <h4>Type de Contrat</h4>
+            <select id="type" name="type">
+                <option value="CDI">CDI</option>
+                <option value="CDD">CDD</option>
+                <option value="Freelance">Freelance</option>
+                <option value="Alternance">Alternance</option>
+                <option value="Stage">Stage</option>
+            </select>
+        </article>
+
+        <article>
+            <h4>Descriptif du poste</h4>
+            <textarea style="width: 547px; height:84px;" maxlength="300"></textarea>
+        </article>
+
+        <article>
+            <h4>Durée (si contrat autre que CDI)</h4>
+            <select id="duree" name="duree">
+                <option value="3 mois">3 mois</option>
+                <option value="6 mois">6 mois</option>
+                <option value="12 mois">12 mois</option>
+            </select>
+        </article>
+    </main>
+
+    <footer>
+      <p>Contact : recrutement@entreprise.com</p>
+    </footer>
+
+    <button type="submit">Déposer l'annonce</button>
+    <form action="Applications_Board.html"></form>
+    <a href="Applications_Board.html" class="formation-link">Retour à la page d'accueil</a>
+</body>
+</html>

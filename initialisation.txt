@@ -1,0 +1,29 @@
+Etape 1: 
+Installer et OUVRIR "Docker Desktop"
+
+Etape 2:
+Ouvrir le terminal wsl et run les commande :
+docker compose down -v
+\* Si c'est la première connexion depuis le démarage de Docker Desktop: */
+docker compose up --build -d  
+\* Sinon : */
+docker compose up -d
+
+Pour afficher le site:
+click sur -> http://localhost:3000
+
+Pour afficher la base de donnée:
+click sur -> http://localhost:5050
+
+\* Pour la première connexion à la base de donnée */
+\* après un "docker compose up --build -d" : */
+nom utilisateur : augustin.viemont@epitech.eu
+mdp : viemont
+click droit sur servers
+click droit sur register => Server ...
+name = \* A vous de choisir */ 
+click sur connection
+Host name/adress = db
+Port = 5432
+Username = devuser
+MDP = devpass
