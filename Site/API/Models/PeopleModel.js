@@ -19,14 +19,12 @@ export const createPeopleService = async (
   phone_number,
   mail,
   password,
-  adress,
-  city
 ) => {
   const result = await pool.query(
     `INSERT INTO People (name, first_name, phone_number, mail, password)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [name, first_name, phone_number, mail, password, adress, city]
+    [name, first_name, phone_number, mail, password]
   );
   return result.rows[0];
 };

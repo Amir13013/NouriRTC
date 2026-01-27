@@ -32,7 +32,7 @@ export const getPeople = async (req, res, next) => {
 }
 
 export const createPeople = async (req, res, next) => {
-    const {name, first_name, phone_number, mail, password, adress, city} = req.body;
+    const {name, first_name, phone_number, mail, password} = req.body;
     console.log("BODY RECU:", req.body);
     try {
         const newPeople = await createPeopleService(
@@ -50,7 +50,7 @@ export const createPeople = async (req, res, next) => {
 
 
 export const updatePeople = async (req, res, next) => {
-    const {name, first_name, phone_number, mail, password, adress, city} = req.body
+    const {name, first_name, phone_number, mail, password} = req.body
     console.log(req.body);
     try {
         const updatedPeople = await updatePeopleByIdService(

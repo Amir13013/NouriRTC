@@ -9,14 +9,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const phone_number = document.getElementById('phone_number').value;
     const mail = document.getElementById('mail').value;
     const password = document.getElementById('password').value;
-    const adress = document.getElementById('adress').value;
-    const city = document.getElementById('city').value;
     
     try {
       const response = await fetch("http://localhost:3000/api/People", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({name, first_name, phone_number, mail, password, adress, city}),
+        body: JSON.stringify({name, first_name, phone_number, mail, password}),
       });
 
       const data = await response.json();
