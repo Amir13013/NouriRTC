@@ -1,16 +1,16 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { getPeopleByMailService } from "../Models/PeopleModel.js";
+// import jwt from "jsonwebtoken";
+import { getUserByMailService } from "../Models/UserModel.js";
 
 export const login = async (req, res) => {
   try {
-    const { mail, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!mail || !password) {
+    if (!email || !password) {
       return res.status(400).json({ message: "Champs manquants" });
     }
 
-    const user = await getPeopleByMailService(mail);
+    const user = await getUserByMailService(email);
 
     if (!user) {
       return res.status(401).json({ message: "Utilisateur non trouvé" });
@@ -22,20 +22,29 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Mot de passe incorrect" });
     }
 
-    const token = jwt.sign(
-      { id: user.id, mail: user.mail },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.json({
-      token,
+    return res.status(200).json({
+      success: true,
+      message: "Connexion réussie",
       user: {
         id: user.id,
-        name: user.name,
-        mail: user.mail,
-      },
+        mail: user.mail
+      }
     });
+
+    // const token = jwt.sign(
+    //   { id: user.id, email: user.email },
+    //   process.env.JWT_SECRET,
+    //   { expiresIn: "1h" }
+    // );
+
+    // res.json({
+    //   token,
+    //   user: {
+    //     id: user.id,
+    //     name: user.name,
+    //     email: user.email,
+    //   },
+    // });
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur" });
   }

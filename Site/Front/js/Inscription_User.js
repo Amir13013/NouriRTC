@@ -10,8 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const mail = document.getElementById('mail').value;
     const password = document.getElementById('password').value;
     
+    
     try {
-      const response = await fetch("http://localhost:3000/api/People", {
+      const response = await fetch("http://localhost:3000/api/User", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({name, first_name, phone_number, mail, password}),

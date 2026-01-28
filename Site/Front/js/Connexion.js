@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById('password').value;
     
     try {
-      const response = await fetch("http://localhost:3000/api/user", {
+      const response = await fetch("http://localhost:3000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({email, password }),
@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data.success) {
         alert("Connexion réussie !");
-        window.location.replace("jb.html");
       } else {
         alert("Erreur : " + data.message);
       }
