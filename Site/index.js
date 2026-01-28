@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import some_error from './API/middleware/Error.js';
 import pool from './API/Config/DataBase.js';
-import People from './API/Routes/User.js';
+import User from './API/Routes/User.js';
 import authRoutes from "./API/Routes/Auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/auth", authRoutes);
 
-app.use('/api', People);
+app.use('/api', User);
 
 app.use(express.static(path.join(__dirname, 'Front')));
 app.get('/', (req, res) => {
