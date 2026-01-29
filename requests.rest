@@ -1,0 +1,24 @@
+GET http://localhost:3000/api/User
+
+###
+
+POST http://localhost:3000/api/User
+Content-type: application/json
+
+{
+    "name": "Augustin",
+    "first_name": "Augustin",
+    "phone_number": "Augustin",
+    "mail": "Augustin",
+    "password": "Augustin"
+}
+
+###
+
+POST http://localhost:3000/auth/login
+Content-type: application/json
+
+{
+    "email": "Augustin",
+    "password": "Augustin"
+}
