@@ -6,9 +6,9 @@ import Link from "next/link";
 import '../../../styles/serverActions.css';
 
 type Channel = {
-  id: number;
+  id: string; // UUID côté backend
   name: string;
-  server_id: number;
+  server_id: string;
 };
 
 type User = {
@@ -17,7 +17,8 @@ type User = {
 
 export default function ChannelPage() {
   const params = useParams();
-  const serverId = params.serverId as string;
+  const serverId = params.serverId as string; // doit être juste l'UUID
+  console.log("serverId:", serverId);
   const router = useRouter();
 
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -34,35 +35,32 @@ export default function ChannelPage() {
       }
 
       try {
+        // Channels
         const resChannels = await fetch(
-          `http://localhost:3001/api/servers/${serverId}/channels`,
-          {
-            headers: { Authorization: "Bearer " + token },
-          }
+          `http://localhost:3001/servers/${serverId}/channels`, // juste l'UUID
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        if (!resChannels.ok) throw new Error("Erreur channels");
+        if (!resChannels.ok) throw new Error("Erreur lors de la récupération des channels");
         const channelsData = await resChannels.json();
-        setChannels(channelsData.data);
+        setChannels(channelsData.data || []);
 
+        // Users
         const resUsers = await fetch(
-          `http://localhost:3001/api/servers/${serverId}/users`,
-          {
-            headers: { Authorization: "Bearer " + token },
-          }
+          `http://localhost:3001/servers/${serverId}/users`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        if (!resUsers.ok) throw new Error("Erreur users");
+        if (!resUsers.ok) throw new Error("Erreur lors de la récupération des utilisateurs");
         const usersData = await resUsers.json();
-        setUsers(usersData.data);
+        setUsers(usersData.data || []);
 
+        // Invite code
         const resInvite = await fetch(
-          `http://localhost:3001/api/servers/${serverId}/inviteCode`,
-          {
-            headers: { Authorization: "Bearer " + token },
-          }
+          `http://localhost:3001/servers/${serverId}/inviteCode`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        if (!resInvite.ok) throw new Error("Erreur invite code");
+        if (!resInvite.ok) throw new Error("Erreur lors de la récupération du code d'invitation");
         const inviteData = await resInvite.json();
-        setInviteCode(inviteData.data.inviteCode);
+        setInviteCode(inviteData.data?.inviteCode || "");
 
       } catch (err) {
         console.error(err);
@@ -79,13 +77,15 @@ export default function ChannelPage() {
     if (!token) return;
 
     try {
-      await fetch(
-        `http://localhost:3001/api/servers/${serverId}`,
+      const res = await fetch(
+        `http://localhost:3001/servers/${serverId}/leave`,
         {
           method: "DELETE",
-          headers: { Authorization: "Bearer " + token },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
+
+      if (!res.ok) throw new Error("Impossible de quitter le serveur");
 
       alert("Vous avez quitté le serveur");
       router.push("/server");
@@ -101,13 +101,15 @@ export default function ChannelPage() {
     if (!token) return;
 
     try {
-      await fetch(
-        `http://localhost:3001/api/servers/${serverId}/server`,
+      const res = await fetch(
+        `http://localhost:3001/servers/${serverId}`,
         {
           method: "DELETE",
-          headers: { Authorization: "Bearer " + token },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
+
+      if (!res.ok) throw new Error("Impossible de supprimer le serveur");
 
       alert("Vous avez supprimé le serveur");
       router.push("/server");
@@ -140,7 +142,6 @@ export default function ChannelPage() {
 
       <section>
         <h2>Membres du serveur</h2>
-
         <ul>
           {users.map((user, index) => (
             <li key={index}>{user.name}</li>

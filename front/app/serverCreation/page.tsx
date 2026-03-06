@@ -23,8 +23,13 @@ export default function CreateServer() {
 
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Vous devez être connecté !");
+        router.push("/connexion");
+        return;
+      }
 
-      const response = await fetch("http://localhost:3001/api/servers", {
+      const response = await fetch("http://localhost:3001/servers", { // route backend alignée
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -33,9 +38,11 @@ export default function CreateServer() {
         body: JSON.stringify(formData),
       });
 
-      alert("Création de serveurs réussie !");
+      if (!response.ok) throw new Error("Erreur lors de la création du serveur");
+
+      alert("Création de serveur réussie !");
       router.push("/server");
-      
+
     } catch (error) {
       alert("Erreur de création de serveur !");
       console.error(error);
@@ -45,12 +52,18 @@ export default function CreateServer() {
   return (
     <div className="signup-container">
       <div className="section employeur">
-        <h1>Créé votre serveur</h1>
+        <h1>Créer votre serveur</h1>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Nom:</label>
-            <input id="name" type="text" value={formData.name} onChange={handleChange} required />
+            <label htmlFor="name">Nom :</label>
+            <input
+              id="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <button type="submit">Créer</button>

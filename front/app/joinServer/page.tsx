@@ -24,11 +24,12 @@ export default function JoinServer() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
+        alert("Vous devez être connecté !");
         router.push("/connexion");
         return;
       }
 
-      const response = await fetch("http://localhost:3001/api/servers/join", {
+      const response = await fetch("http://localhost:3001/servers/join", { // route backend alignée
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -41,19 +42,19 @@ export default function JoinServer() {
 
       if (response.ok) {
         alert("Serveur rejoint !");
+        // redirection vers le premier channel du serveur
         router.push(`/channel/${data.data.serverId}`);
       } else {
-        alert("Erreur : " + data.message);
+        alert("Erreur : " + (data.message || "Impossible de rejoindre le serveur"));
       }
     } catch (error) {
-      alert("Je ne peux pas rejoindre le serveur !");
+      alert("Impossible de rejoindre le serveur !");
       console.error(error);
     }
   };
 
   return (
     <div className="signup-container">
-
       <div className="section employeur">
         <h1>Rejoindre un serveur</h1>
 

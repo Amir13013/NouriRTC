@@ -27,18 +27,63 @@ export default function ChatPage() {
       const token = localStorage.getItem("token");
       if (!token) return router.push("/connexion");
 
-      const res = await fetch(
-        `http://localhost:3001/api/servers/channel/${channelId}`,
-        { headers: { Authorization: "Bearer " + token } }
-      );
+      try {
+        // Utilisation de la route testée GET /channels/:channelId
+        const res = await fetch(
+          `http://localhost:3001/channels/${channelId}`,
+          { headers: { Authorization: "Bearer " + token } }
+        );
 
-      const data = await res.json();
-      setChannelName(data.data.name);
-      setServerId(data.data.server_id);
+        if (!res.ok) throw new Error("Impossible de récupérer le channel");
+
+        const data = await res.json();
+        setChannelName(data.data.name);
+        setServerId(data.data.server_id);
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de la récupération du channel");
+        router.push("/server");
+      }
     };
 
     fetchChannel();
   }, [channelId, router]);
+
+  // --- Récupération messages persistants MongoDB ---
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const res = await fetch(
+          `http://localhost:3001/message/channel/${channelId}`,
+          {
+            headers: { Authorization: "Bearer " + token },
+          }
+        );
+
+        if (!res.ok) throw new Error("Impossible de récupérer les messages");
+
+        const data = await res.json();
+
+        // On mappe pour correspondre à la structure du front
+        const mappedMessages = data.data.map((m: any) => ({
+          type: "chat",
+          sender: m.userId, // ou m.userName si tu as stocké le nom
+          text: m.content,
+          _id: m._id,
+          createdAt: m.createdAt
+        }));
+
+        setMessages(mappedMessages);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    if (channelId) fetchMessages();
+  }, [channelId]);
 
   // Connexion socket + listeners
   useEffect(() => {
@@ -126,15 +171,24 @@ export default function ChatPage() {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    await fetch(
-      `http://localhost:3001/api/servers/channel/${channelId}`,
-      {
-        method: "DELETE",
-        headers: { Authorization: "Bearer " + token },
-      }
-    );
+    try {
+      // Utilisation de la route testée DELETE /channels/:channelId
+      const res = await fetch(
+        `http://localhost:3001/channels/${channelId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + token },
+        }
+      );
 
-    router.push(`/channel/${serverId}`);
+      if (!res.ok) throw new Error("Impossible de supprimer le channel");
+
+      alert("Channel supprimé !");
+      router.push(`/channel/${serverId}`);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la suppression du channel");
+    }
   };
 
   return (

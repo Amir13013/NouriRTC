@@ -5,10 +5,13 @@ import authRoutes from './Routes/Authentication.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import pool from './Config/DataBase.js';
+import './Config/MongoConfig.js';
 import jwt from 'jsonwebtoken';
 import Servers from './Routes/Server.js';
 import Channels from './Routes/Channel.js';
 import setupSwagger from './Config/swagger.js';
+import Message from './Routes/Message.js';
+import { createMessageService } from './Models/MessageModel.js';
 
 const app = express();
 
@@ -18,7 +21,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/auth', authRoutes);
 app.use('/servers', Servers);
-app.use ('/channels', Channels)
+app.use('/channels', Channels);
+app.use('/message', Message);
 
 setupSwagger(app);
 
@@ -94,16 +98,32 @@ pool.connect()
       });
 
       // message
-      socket.on('channel message', ({ channelId, msg }) => {
-        const room = String(channelId || '').trim();
-        const message = String(msg || '').trim();
-        if (!room || !message) return;
+      socket.on('channel message', async ({ channelId, msg }) => {
+        try {
 
-        io.to(room).emit('channel message', {
-          channelId: room,
-          msg: message,
-          sender: displayName,
-        });
+          const room = String(channelId || '').trim();
+          const message = String(msg || '').trim();
+
+          if (!room || !message) return;
+          const userId = socket.user.id;
+
+          const savedMessage = await createMessageService(
+            userId,
+            room,
+            message
+          );
+
+          io.to(room).emit('channel message', {
+            _id: savedMessage._id,
+            channelId: savedMessage.channelId,
+            msg: savedMessage.content,
+            sender: displayName,
+            createdAt: savedMessage.createdAt
+          });
+
+        } catch (error) {
+          console.error("Erreur message socket:", error);
+        }
       });
 
       // typing msg

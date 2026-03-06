@@ -115,8 +115,6 @@ export const getAllChannelByServerId = async (req, res, next) => {
     
     const AllChannel = await getAllChannelByServerIdService(serverId);
     
-    if(!AllChannel || AllChannel.length === 0)
-      return handleResponse(res, 404, "Cannot get all channels");
     handleResponse(res, 200, "Get all channels successfully", AllChannel);
   } catch (error) {
     next(error);

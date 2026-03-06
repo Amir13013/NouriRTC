@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import '../../styles/serverActions.css';
 
 type Server = {
-  id: string;
+  id: string; // UUID côté backend
   name: string;
-  owner: string;
+  owner: string; // UUID du propriétaire
   invitecode: string;
 };
 
@@ -25,7 +25,7 @@ export default function ChatPage() {
       }
 
       try {
-        const res = await fetch("http://localhost:3001/api/servers/members", {
+        const res = await fetch("http://localhost:3001/servers/members", { // route backend alignée
           headers: {
             "Authorization": "Bearer " + token,
           },
@@ -34,6 +34,7 @@ export default function ChatPage() {
         if (!res.ok) throw new Error("Erreur lors de la récupération des serveurs");
 
         const data = await res.json();
+        console.log("Serveurs récupérés :", data.data);
         setServers(data.data || []);
       } catch (err) {
         console.error(err);
@@ -46,22 +47,20 @@ export default function ChatPage() {
 
   return (
     <div>
-
       <nav>
-        <a href="/serverCreation">Créer un serveur  </a> |{" "}
-        <a href="/joinServer" >Rejoindre un serveur</a>
+        <a href="/serverCreation">Créer un serveur</a> |{" "}
+        <a href="/joinServer">Rejoindre un serveur</a>
       </nav>
 
       <section>
         <h2>Mes serveurs</h2>
-
-          <ul>
-            {servers.map(server => (
-              <li key={server.id}>
-                <a href={`/channel/${server.id}`}>{server.name}</a>
-              </li>
-            ))}
-          </ul>
+        <ul>
+          {servers.map(server => (
+            <li key={server.id}>
+              <a href={`/channel/${server.id}`}>{server.name}</a>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

@@ -38,8 +38,8 @@ POST http://localhost:3001/auth/login
 Content-Type: application/json
 
 {
-    "mail": "alice.durand@test.com",
-    "password": "Password123!"
+    "mail": "a",
+    "password": "a"
 }
 
 # ### GET USER BY ID SERVICE
@@ -51,8 +51,7 @@ Content-Type: application/json
 ### CREATE SERVER
 #################################################
 POST http://localhost:3001/servers
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
-Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjcyOGE1OThkLWQ5NWEtNDBlYi04OGZhLTUwMWUyOTNhZWYwYSIsIm1haWwiOiJqZWFuLmR1cG9udEB0ZXN0LmNvbSIsIm5hbWUiOiJEdXBvbnQiLCJpYXQiOjE3NzI3NTA1MjMsImV4cCI6MTc3Mjc3MjEyM30.ykTIcYeTljKBwPZF-r4p9Mw0MMyc_p1_FyCw9S3LKTI
 
 {
   "name": "Mon serveur test"
@@ -62,54 +61,54 @@ Content-Type: application/json
 ### GET ALL SERVERS
 #################################################
 GET http://localhost:3001/servers
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0ZjRkMGQzLWRjMjktNDU0NS04MTc5LTc0MjhiMjcyNGM3NCIsIm1haWwiOiJhIiwibmFtZSI6ImEiLCJpYXQiOjE3NzI3NTAwMDgsImV4cCI6MTc3Mjc3MTYwOH0.t6xT2tqtVjjy7mwGjBXCKFYaExXJ7oh6yj_iymK27mI
 
 #################################################
 ### GET SERVER BY ID
 #################################################
 GET http://localhost:3001/servers/1
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+Authorization: Bearer 
 
 #################################################
 ### GET SERVER INVITE CODE
 #################################################
 GET http://localhost:3001/servers/1/inviteCode
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+Authorization: Bearer 
 
 #################################################
 ### JOIN SERVER WITH INVITE CODE
 #################################################
 POST http://localhost:3001/servers/join
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJtYWlsIjoiYWxpY2UuZHVyYW5kQHRlc3QuY29tIiwibmFtZSI6IkR1cmFuZCIsImlhdCI6MTc3MjYyODA3NSwiZXhwIjoxNzcyNjQ5Njc1fQ.QHHky5i4nQ0Cn-Me7TwNIy6rBxAUW-uh-Ukg_zlF8ys
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjcyZjkyNTZlLTAxYmYtNDY1MC05MDhjLTQ4MzAxMzZmYTE0ZiIsIm1haWwiOiJ6IiwibmFtZSI6InoiLCJpYXQiOjE3NzI3NTEzNTMsImV4cCI6MTc3Mjc3Mjk1M30.3YtKURFtuEth73ei8sL-X0wu0NGqWD62MSM4IDY9I8Q
 Content-Type: application/json
 
 {
-  "inviteCode": "ebfbe37588fe"
+  "inviteCode": "27551de3d733"
 }
 
 #################################################
 ### GET ALL SERVERS WHERE USER IS MEMBER
 #################################################
 GET http://localhost:3001/servers/members
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+Authorization: Bearer 
 
 #################################################
 ### GET ALL USERS IN A SERVER
 #################################################
 GET http://localhost:3001/servers/1/users
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+Authorization: Bearer 
 
 #################################################
 ### GET ALL CHANNELS IN A SERVER
 #################################################
-GET http://localhost:3001/servers/1/channels
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+GET http://localhost:3001/servers/f90a9de2-3c08-4bba-99c5-f17be00e6a49/channels
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMxNDNmZGVhLWRjZTktNGNmZC1iNDg0LWNhM2Q4YjdlYzdkMyIsIm1haWwiOiJhIiwibmFtZSI6ImEiLCJpYXQiOjE3NzI3NTA2MTQsImV4cCI6MTc3Mjc3MjIxNH0.b1_ijMpS6yEjN7JE4jAlhN2T_xvHpy7YZ7uDDHaCSPU
 
 #################################################
 ### CREATE CHANNEL IN SERVER
 #################################################
-POST http://localhost:3001/servers/1/channels
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+POST http://localhost:3001/servers/f90a9de2-3c08-4bba-99c5-f17be00e6a49/channels
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMxNDNmZGVhLWRjZTktNGNmZC1iNDg0LWNhM2Q4YjdlYzdkMyIsIm1haWwiOiJhIiwibmFtZSI6ImEiLCJpYXQiOjE3NzI3NTA2MTQsImV4cCI6MTc3Mjc3MjIxNH0.b1_ijMpS6yEjN7JE4jAlhN2T_xvHpy7YZ7uDDHaCSPU
 Content-Type: application/json
 
 {
@@ -120,7 +119,7 @@ Content-Type: application/json
 ### UPDATE SERVER NAME
 #################################################
 PUT http://localhost:3001/servers/1
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+Authorization: Bearer 
 Content-Type: application/json
 
 {
@@ -131,8 +130,7 @@ Content-Type: application/json
 ### UPDATE MEMBER ROLE
 #################################################
 PUT http://localhost:3001/servers/1/members/2
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
-Content-Type: application/json
+Authorization: Bearer 
 
 {
   "role": "admin"
@@ -142,7 +140,7 @@ Content-Type: application/json
 ### CREATE CHANNEL AS ADMIN
 #################################################
 POST http://localhost:3001/servers/1/channels
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJtYWlsIjoiYWxpY2UuZHVyYW5kQHRlc3QuY29tIiwibmFtZSI6IkR1cmFuZCIsImlhdCI6MTc3MjYyODA3NSwiZXhwIjoxNzcyNjQ5Njc1fQ.QHHky5i4nQ0Cn-Me7TwNIy6rBxAUW-uh-Ukg_zlF8ys
+Authorization: Bearer 
 Content-Type: application/json
 
 {
@@ -153,10 +151,38 @@ Content-Type: application/json
 ### LEAVE SERVER (user courant)
 #################################################
 DELETE http://localhost:3001/servers/1/leave
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIiLCJtYWlsIjoiYWxpY2UuZHVyYW5kQHRlc3QuY29tIiwibmFtZSI6IkR1cmFuZCIsImlhdCI6MTc3MjYyODA3NSwiZXhwIjoxNzcyNjQ5Njc1fQ.QHHky5i4nQ0Cn-Me7TwNIy6rBxAUW-uh-Ukg_zlF8ys
+Authorization: Bearer 
 
 #################################################
 ### DELETE SERVER
 #################################################
 DELETE http://localhost:3001/servers/1
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJtYWlsIjoiamVhbi5kdXBvbnRAdGVzdC5jb20iLCJuYW1lIjoiRHVwb250IiwiaWF0IjoxNzcyNjI4MDUwLCJleHAiOjE3NzI2NDk2NTB9.0u6LQtr5ZJ7XVmxBcm0-FiMHj52CoeiDI0VGN7GV8yw
+Authorization: Bearer 
+
+### CREATE MESSAGE
+POST http://localhost:3001/message
+Authorization: Bearer 
+Content-Type: application/json
+
+{
+  "channelId": "665f1234567890abcdef1234",
+  "content": "Bonjour depuis REST"
+}
+
+### GET MESSAGES BY CHANNEL
+GET http://localhost:3001/message/channel/665f1234567890abcdef1234
+Authorization: Bearer 
+
+
+### Channel.js
+#################################################
+### GET CHANNEL BY ID
+#################################################
+GET http://localhost:3001/channels/fc49a4bb-ad69-43cf-8ea5-0919e4a66184
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMxNDNmZGVhLWRjZTktNGNmZC1iNDg0LWNhM2Q4YjdlYzdkMyIsIm1haWwiOiJhIiwibmFtZSI6ImEiLCJpYXQiOjE3NzI3NTIwOTMsImV4cCI6MTc3Mjc3MzY5M30.C5c6iZAJ3z5Y3G8RtKTBtPJtusUy9wqwr6D-X39tRxU
+
+#################################################
+### DELETE CHANNEL BY ID
+#################################################
+DELETE http://localhost:3001/channels/fc49a4bb-ad69-43cf-8ea5-0919e4a66184
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMxNDNmZGVhLWRjZTktNGNmZC1iNDg0LWNhM2Q4YjdlYzdkMyIsIm1haWwiOiJhIiwibmFtZSI6ImEiLCJpYXQiOjE3NzI3NTIwOTMsImV4cCI6MTc3Mjc3MzY5M30.C5c6iZAJ3z5Y3G8RtKTBtPJtusUy9wqwr6D-X39tRxU

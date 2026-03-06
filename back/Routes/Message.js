@@ -3,7 +3,7 @@ import {
   createMessage,
   getMessagesByChannel,
   deleteMessage
-} from '../Controllers/MessageController.js';
+} from '../Controllers/MessageControllers.js';
 import { authenticate } from '../middleware/authentificationJwt.js';
 
 const router = express.Router();

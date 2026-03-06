@@ -26,7 +26,7 @@ export default function Inscription() {
     e.preventDefault();
 
     try {
-      const response = await fetch("hhttp://localhost:3001/auth/login", {
+      const response = await fetch("http://localhost:3001/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

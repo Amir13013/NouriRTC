@@ -1,5 +1,8 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+
 CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     first_name TEXT NOT NULL,
     phone_number TEXT,
@@ -7,17 +10,19 @@ CREATE TABLE users (
     password TEXT NOT NULL
 );
 
+
 CREATE TABLE Servers (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
-    owner BIGINT NOT NULL REFERENCES users(id),
+    owner UUID NOT NULL REFERENCES users(id),
     invitecode TEXT NOT NULL
-);  
+);
+
 
 CREATE TABLE users_servers (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    server_id BIGINT NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    server_id UUID NOT NULL,
     role TEXT NOT NULL DEFAULT 'member',
 
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -29,10 +34,11 @@ CREATE TABLE users_servers (
     CHECK (role IN ('owner', 'admin', 'member'))
 );
 
+
 CREATE TABLE channels (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
-    server_id BIGINT NOT NULL,
+    server_id UUID NOT NULL,
 
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );

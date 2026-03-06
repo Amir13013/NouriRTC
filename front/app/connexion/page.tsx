@@ -57,9 +57,9 @@ export default function Connexion() {
           <div className="form-group">
             <label htmlFor="mail">Email :</label>
             <input
-              id="email"
+              id="mail"
               type="text"
-              value={formData.email}
+              value={formData.mail}
               onChange={handleChange}
               required
             />

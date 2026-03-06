@@ -18,7 +18,7 @@ export default function CreateChannel() {
       const token = localStorage.getItem("token");
       if (!token) return router.push("/connexion");
 
-      await fetch(`http://localhost:3001/api/servers/${serverId}/channels`, {
+      const res = await fetch(`http://localhost:3001/servers/${serverId}/channels`, { // <-- enlever /api
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -27,12 +27,17 @@ export default function CreateChannel() {
         body: JSON.stringify({ name }),
       });
 
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Erreur lors de la création du channel");
+      }
+
       alert("Channel créé !");
       router.push(`/channel/${serverId}`);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur de création de channel");
+      alert("Erreur de création de channel : " + err.message);
     }
   };
 
