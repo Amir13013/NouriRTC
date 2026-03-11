@@ -62,7 +62,6 @@ Back-end (API + Socket.IO): http://localhost:3001
 PGAdmin (administration DB): http://localhost:5050
 
 ## Auteurs
-[Viemont_Augustin](https://github.com/Augustin734)
-[Perles_Olysse](https://github.com/S6leak)
-[Viscione_Clyde](https://github.com/ClydeViscione)
-[Clerc_Lois](https://github.com/LaFicelleCmoi)
+[Shérine](https://github.com/)
+[Amir](https://github.com/Amir13013)
+[FOUDIL-BEY_Nouri](https://github.com/Nouri3406)
