@@ -1,24 +1,25 @@
 import express from "express";
-import { 
-  deleteServerById, 
-  createChannelByServerId, 
-  deleteUserFromServer, 
-  createServer, 
-  getAllServer, 
-  getServer, 
-  getServerInviteCode, 
-  joinServerWithInviteCode, 
-  getAllMembersByServer, 
+import {
+  deleteServerById,
+  createChannelByServerId,
+  deleteUserFromServer,
+  createServer,
+  getAllServer,
+  getServer,
+  getServerInviteCode,
+  joinServerWithInviteCode,
+  getAllMembersByServer,
   getAllChannelByServerId,
   getAllUsersByServer,
   updateServer,
-  updateMemberRole
+  updateMemberRole,
+  kickUserFromServer,
+  banUserFromServer,
 } from "../Controllers/ServerControllers.js";
 import { authenticate } from "../middleware/authentificationJwt.js";
 import { checkRole } from "../middleware/CheckRole.js";
 
 const router = express.Router();
-
 
 // GET
 /**
@@ -30,34 +31,22 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: Liste des serveurs
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
  */
-router.get ("/",authenticate, getAllServer);
+router.get("/", authenticate, getAllServer);
 
 /**
  * @swagger
  * /api/members:
  *   get:
- *     summary: Récupérer tous les membres d'un serveur
+ *     summary: Récupérer tous les serveurs de l'utilisateur connecté
  *     tags: [Servers]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Liste des membres du serveur
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
+ *         description: Liste des serveurs du membre
  */
-router.get ("/members", authenticate, getAllMembersByServer);
+router.get("/members", authenticate, getAllMembersByServer);
 
 /**
  * @swagger
@@ -71,20 +60,15 @@ router.get ("/members", authenticate, getAllMembersByServer);
  *         required: true
  *         schema:
  *           type: string
- *         description: ID du serveur
  *     responses:
  *       200:
  *         description: Détails du serveur
- *         content:
- *           application/json:
- *             schema:
- *               type: object
  */
-router.get ("/:id", authenticate, getServer);
+router.get("/:id", authenticate, getServer);
 
 router.get("/:serverId/users", authenticate, getAllUsersByServer);
 
-router.get ("/:serverId/channels", authenticate, getAllChannelByServerId);
+router.get("/:serverId/channels", authenticate, getAllChannelByServerId);
 
 /**
  * @swagger
@@ -98,25 +82,17 @@ router.get ("/:serverId/channels", authenticate, getAllChannelByServerId);
  *         required: true
  *         schema:
  *           type: string
- *         description: ID du serveur
  *     responses:
  *       200:
  *         description: Code d'invitation
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 inviteCode:
- *                   type: string
  */
-router.get ("/:id/inviteCode", authenticate, getServerInviteCode);
+router.get("/:id/inviteCode", authenticate, getServerInviteCode);
 
 
 // DELETE
-router.delete ("/:serverId", authenticate, checkRole(["owner"]), deleteServerById);
+router.delete("/:serverId", authenticate, checkRole(["owner"]), deleteServerById);
 
-router.delete ("/:serverId/leave", authenticate, checkRole(["owner", "admin"]), deleteUserFromServer);
+router.delete("/:serverId/leave", authenticate, checkRole(["owner", "admin", "member"]), deleteUserFromServer);
 
 
 // POST
@@ -139,16 +115,11 @@ router.delete ("/:serverId/leave", authenticate, checkRole(["owner", "admin"]), 
  *             properties:
  *               name:
  *                 type: string
- *                 description: Nom du serveur
  *     responses:
  *       201:
  *         description: Serveur créé avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
  */
-router.post ("/", authenticate, createServer);
+router.post("/", authenticate, createServer);
 
 /**
  * @swagger
@@ -169,23 +140,91 @@ router.post ("/", authenticate, createServer);
  *             properties:
  *               inviteCode:
  *                 type: string
- *                 description: Code d'invitation du serveur
  *     responses:
  *       200:
  *         description: Serveur rejoint avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
+ *       403:
+ *         description: Utilisateur banni de ce serveur
  */
-router.post ("/join", authenticate, joinServerWithInviteCode);
+router.post("/join", authenticate, joinServerWithInviteCode);
 
-router.post ("/:serverId/channels", authenticate, checkRole(["owner", "admin"]), createChannelByServerId);
+router.post("/:serverId/channels", authenticate, checkRole(["owner", "admin"]), createChannelByServerId);
+
+/**
+ * @swagger
+ * /api/{serverId}/kick/{userId}:
+ *   post:
+ *     summary: Expulser un membre du serveur
+ *     tags: [Servers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Membre expulsé
+ *       403:
+ *         description: Permissions insuffisantes
+ *       404:
+ *         description: Membre introuvable
+ */
+router.post("/:serverId/kick/:userId", authenticate, checkRole(["owner", "admin"]), kickUserFromServer);
+
+/**
+ * @swagger
+ * /api/{serverId}/ban/{userId}:
+ *   post:
+ *     summary: Bannir un membre du serveur
+ *     tags: [Servers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Raison du ban (optionnel)
+ *               expiresAt:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Date d'expiration du ban (null = permanent)
+ *     responses:
+ *       200:
+ *         description: Membre banni
+ *       400:
+ *         description: Déjà banni
+ *       403:
+ *         description: Permissions insuffisantes
+ */
+router.post("/:serverId/ban/:userId", authenticate, checkRole(["owner", "admin"]), banUserFromServer);
 
 
 // PUT
-router.put ("/:serverId", authenticate, checkRole(["owner"]), updateServer);
+router.put("/:serverId", authenticate, checkRole(["owner"]), updateServer);
 
-router.put ("/:serverId/members/:userId", authenticate, checkRole(["owner"]), updateMemberRole);
+router.put("/:serverId/members/:userId", authenticate, checkRole(["owner"]), updateMemberRole);
 
-export default router ;
+export default router;
