@@ -93,12 +93,12 @@ pool.connect()
 
           const userId = socket.user.id;
 
-          const channelRes = await pool.query('SELECT server_id FROM channels WHERE id = ', [room]);
+          const channelRes = await pool.query('SELECT server_id FROM channels WHERE id = $1', [room]);
           if (channelRes.rows.length === 0) return;
           const serverIdOfChannel = channelRes.rows[0].server_id;
 
           const memberRes = await pool.query(
-            'SELECT 1 FROM users_servers WHERE user_id =  AND server_id = ',
+            'SELECT 1 FROM users_servers WHERE user_id = $1 AND server_id = $2',
             [userId, serverIdOfChannel]
           );
           if (memberRes.rows.length === 0) { socket.disconnect(true); return; }
