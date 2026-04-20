@@ -11,12 +11,8 @@ import Servers from './Routes/Server.js';
 import Channels from './Routes/Channel.js';
 import setupSwagger from './Config/swagger.js';
 import Message from './Routes/Message.js';
-import Dm from './Routes/Dm.js';
-import Gif from './Routes/Gif.js';
 import { createMessageService } from './Models/MessageModel.js';
 import { registerMessageEditEvents } from './socketEvents/messageEditEvents.js';
-import { registerReactionEvents } from './socketEvents/reactionEvents.js';
-import { registerDmEvents } from './socketEvents/dmEvents.js';
 
 const app = express();
 
@@ -28,8 +24,6 @@ app.use('/auth', authRoutes);
 app.use('/servers', Servers);
 app.use('/channels', Channels);
 app.use('/message', Message);
-app.use('/dm', Dm);
-app.use('/gif', Gif);
 
 setupSwagger(app);
 app.use(some_error);
@@ -40,7 +34,7 @@ pool.connect()
 
     const httpServer = createServer(app);
     const io = new Server(httpServer, {
-      cors: { origin: '*' },
+      cors: { origin: 'http://localhost:3000' },
     });
 
     app.set('io', io);
@@ -64,10 +58,10 @@ pool.connect()
         displayName =
           (socket.user?.first_name && String(socket.user.first_name).trim()) ||
           (socket.user?.name && String(socket.user.name).trim()) ||
-          `user-${socket.id.slice(0, 5)}`;
+          'user-' + socket.id.slice(0, 5);
 
         socket.data.displayName = displayName;
-        socket.emit('system', `Bienvenue ${displayName} !`);
+        socket.emit('system', 'Bienvenue ' + displayName + ' !');
       } catch {
         return socket.disconnect();
       }
@@ -77,8 +71,8 @@ pool.connect()
         if (!room) return;
         socket.data.channelId = room;
         await socket.join(room);
-        socket.emit('system', `Tu as rejoint le channel ${room}`);
-        socket.to(room).emit('system', `${displayName} a rejoint le channel`);
+        socket.emit('system', 'Tu as rejoint le channel ' + room);
+        socket.to(room).emit('system', displayName + ' a rejoint le channel');
         await updateUsers(room);
       });
 
@@ -87,7 +81,7 @@ pool.connect()
         if (!room) return;
         await socket.leave(room);
         if (socket.data.channelId === room) socket.data.channelId = null;
-        socket.to(room).emit('system', `${displayName} a quitté le channel`);
+        socket.to(room).emit('system', displayName + ' a quitté le channel');
         await updateUsers(room);
       });
 
@@ -99,13 +93,12 @@ pool.connect()
 
           const userId = socket.user.id;
 
-          // Vérifie que l'utilisateur est encore membre du serveur
-          const channelRes = await pool.query('SELECT server_id FROM channels WHERE id = $1', [room]);
+          const channelRes = await pool.query('SELECT server_id FROM channels WHERE id = ', [room]);
           if (channelRes.rows.length === 0) return;
           const serverIdOfChannel = channelRes.rows[0].server_id;
 
           const memberRes = await pool.query(
-            'SELECT 1 FROM users_servers WHERE user_id = $1 AND server_id = $2',
+            'SELECT 1 FROM users_servers WHERE user_id =  AND server_id = ',
             [userId, serverIdOfChannel]
           );
           if (memberRes.rows.length === 0) { socket.disconnect(true); return; }
@@ -121,7 +114,7 @@ pool.connect()
             createdAt: savedMessage.createdAt,
           });
         } catch (error) {
-          console.error("Erreur message socket:", error);
+          console.error('Erreur message socket:', error);
         }
       });
 
@@ -136,15 +129,12 @@ pool.connect()
         if (room) await updateUsers(room);
       });
 
-      // Feature handlers
       registerMessageEditEvents(socket, io);
-      registerReactionEvents(socket, io);
-      registerDmEvents(socket, io);
     });
 
     const PORT_BACK = process.env.PORT_BACK || 3001;
     httpServer.listen(PORT_BACK, () => {
-      console.log(`Server running on port ${PORT_BACK}`);
+      console.log('Server running on port ' + PORT_BACK);
     });
   })
   .catch(err => console.error('Erreur de connexion à PostgreSQL :', err));
