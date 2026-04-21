@@ -151,7 +151,7 @@ router.post("/", authenticate, createServer);
  */
 router.post("/join", authenticate, joinServerWithInviteCode);
 
-router.post("/:serverId/channels", authenticate, checkRole(["owner", "admin"]), createChannelByServerId);
+router.post("/:serverId/channels", authenticate, checkRole(["owner"]), createChannelByServerId);
 
 /**
  * @swagger
