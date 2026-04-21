@@ -66,18 +66,17 @@ export default function ChatPage() {
   const [muteTarget,   setMuteTarget]   = useState<Member | null>(null);
   const [muteDuration, setMuteDuration] = useState('5min');
 
-  const currentUserRef = useRef<any>(null);
+  const [me, setMe]    = useState<any>(null);
   const bottomRef      = useRef<HTMLDivElement>(null);
   const token = () => localStorage.getItem('token') || '';
 
-  // derived — use String() everywhere: pg returns numbers, JWT may differ
-  const me              = currentUserRef.current;
+  // derived — use String() everywhere for safe UUID comparisons
   const currentUserRole = members.find(m => String(m.id) === String(me?.id))?.role ?? null;
 
   // ── init ──────────────────────────────────────────────────────────
   useEffect(() => {
     const u = localStorage.getItem('user');
-    if (u) currentUserRef.current = JSON.parse(u);
+    if (u) setMe(JSON.parse(u));
   }, []);
 
   useEffect(() => {
@@ -99,8 +98,8 @@ export default function ChatPage() {
 
         setMessages((dMsg.data || []).map((m: any) => ({
           type:      'chat',
-          sender:    m.userId,
-          senderId:  m.userId,
+          sender:    String(m.userId),
+          senderId:  String(m.userId),
           text:      m.content,
           _id:       String(m._id),
           isEdited:  m.is_edited,
@@ -366,8 +365,8 @@ export default function ChatPage() {
           })}
         </div>
 
-        {/* Create channel (owner/admin) */}
-        {(currentUserRole === 'owner' || currentUserRole === 'admin') && (
+        {/* Create channel (owner only) */}
+        {currentUserRole === 'owner' && (
           <div style={{ padding: 8, borderTop: '1px solid #1e1f22' }}>
             <a
               href={`/channelCreation/${serverId}`}
@@ -411,9 +410,11 @@ export default function ChatPage() {
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 1 }}>
           {messages.map((m, i) => {
-            const isMe        = me && (m.senderId || m.sender) === me.id;
-            const senderMbr   = members.find(mb => mb.id === m.senderId);
-            const senderLabel = senderMbr ? `${senderMbr.first_name} ${senderMbr.name}` : m.sender;
+            const isMe        = me && String(m.senderId || m.sender) === String(me.id);
+            const senderMbr   = members.find(mb => String(mb.id) === String(m.senderId));
+            const senderLabel = senderMbr
+              ? `${senderMbr.first_name} ${senderMbr.name}`
+              : (m.sender?.length === 36 ? 'Utilisateur inconnu' : m.sender);
 
             if (m.type === 'system') return (
               <div key={m._id || i} style={{ textAlign: 'center', color: '#96989d', fontSize: 11, padding: '2px 0' }}>
