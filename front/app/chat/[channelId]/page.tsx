@@ -70,9 +70,9 @@ export default function ChatPage() {
   const bottomRef      = useRef<HTMLDivElement>(null);
   const token = () => localStorage.getItem('token') || '';
 
-  // derived
+  // derived — use String() everywhere: pg returns numbers, JWT may differ
   const me              = currentUserRef.current;
-  const currentUserRole = members.find(m => m.id === me?.id)?.role ?? null;
+  const currentUserRole = members.find(m => String(m.id) === String(me?.id))?.role ?? null;
 
   // ── init ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -239,7 +239,7 @@ export default function ChatPage() {
     setEmojiPickerFor(null);
   };
 
-  const canEdit = (msg: Msg) => me && (msg.senderId || msg.sender) === me.id;
+  const canEdit = (msg: Msg) => me && String(msg.senderId || msg.sender) === String(me.id);
   const startEdit = (msg: Msg) => { if (!canEdit(msg)) return; setEditingId(msg._id); setEditContent(msg.text); };
   const submitEdit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,7 +249,7 @@ export default function ChatPage() {
   };
 
   const canActOn = (t: Member) => {
-    if (!currentUserRole || t.id === me?.id || t.role === 'owner') return false;
+    if (!currentUserRole || String(t.id) === String(me?.id) || t.role === 'owner') return false;
     if (currentUserRole === 'owner') return true;
     if (currentUserRole === 'admin' && t.role === 'member') return true;
     return false;
@@ -261,7 +261,7 @@ export default function ChatPage() {
     const r = await fetch(`http://localhost:3001/servers/${serverId}/kick/${member.id}`, {
       method: 'POST', headers: { Authorization: 'Bearer ' + token() },
     });
-    if (r.ok) setMembers(prev => prev.filter(m => m.id !== member.id));
+    if (r.ok) setMembers(prev => prev.filter(m => String(m.id) !== String(member.id)));
     else alert((await r.json()).message);
   };
 
@@ -469,7 +469,7 @@ export default function ChatPage() {
                     {/* Reactions */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3, position: 'relative' }} onClick={e => e.stopPropagation()}>
                       {(m.reactions || []).map((r: any) => {
-                        const mine = r.users?.includes(me?.id);
+                        const mine = r.users?.includes(String(me?.id));
                         return (
                           <button key={r.emoji} onClick={() => sendReaction(m._id, r.emoji)}
                             style={{ background: mine ? 'rgba(88,101,242,0.35)' : '#2a2a2a', border: mine ? '1px solid #5865f2' : '1px solid #374151', borderRadius: 10, padding: '1px 7px', cursor: 'pointer', fontSize: 12, color: mine ? '#fff' : '#9ca3af', display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -576,7 +576,7 @@ export default function ChatPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {member.first_name} {member.name}
-                      {member.id === me?.id && <span style={{ color: '#96989d', fontSize: 10 }}> (vous)</span>}
+                      {String(member.id) === String(me?.id) && <span style={{ color: '#96989d', fontSize: 10 }}> (vous)</span>}
                     </div>
                   </div>
                   {icon && <span style={{ fontSize: 13 }}>{icon}</span>}
