@@ -248,11 +248,12 @@ export default function ChatPage() {
     setEditingId(null); setEditContent('');
   };
 
+  // Only the owner can kick/ban/mute — admin can only DM
   const canActOn = (t: Member) => {
-    if (!currentUserRole || String(t.id) === String(me?.id) || t.role === 'owner') return false;
-    if (currentUserRole === 'owner') return true;
-    if (currentUserRole === 'admin' && t.role === 'member') return true;
-    return false;
+    if (currentUserRole !== 'owner') return false;
+    if (String(t.id) === String(me?.id)) return false; // can't act on self
+    if (t.role === 'owner') return false;               // can't act on another owner
+    return true;
   };
 
   const handleKick = async (member: Member) => {
@@ -458,11 +459,12 @@ export default function ChatPage() {
 
                     {m.isEdited && <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 4 }}>(modifié)</span>}
 
-                    {/* Edit button — appears on hover */}
+                    {/* Edit button — always visible on own messages */}
                     {canEdit(m) && (
                       <button onClick={e => { e.stopPropagation(); startEdit(m); }}
-                        style={{ position: 'absolute', top: -8, right: -8, background: '#36393f', border: '1px solid #1e1f22', borderRadius: 4, padding: '1px 5px', cursor: 'pointer', color: '#96989d', fontSize: 11 }}>
-                        ✏️
+                        title="Modifier ce message"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 12, padding: '2px 4px', marginTop: 2 }}>
+                        ✏️ modifier
                       </button>
                     )}
 
@@ -478,8 +480,9 @@ export default function ChatPage() {
                         );
                       })}
                       <button onClick={() => setEmojiPickerFor(emojiPickerFor === m._id ? null : m._id)}
-                        style={{ background: 'transparent', border: '1px dashed #374151', borderRadius: 10, padding: '1px 7px', cursor: 'pointer', color: '#6b7280', fontSize: 12 }}>
-                        + 😊
+                        title="Réagir"
+                        style={{ background: '#2a2a2a', border: '1px solid #374151', borderRadius: 10, padding: '2px 8px', cursor: 'pointer', color: '#9ca3af', fontSize: 13 }}>
+                        😊
                       </button>
                       {emojiPickerFor === m._id && (
                         <div style={{ position: 'absolute', bottom: 28, left: 0, background: '#1f2937', border: '1px solid #374151', borderRadius: 8, padding: 8, display: 'flex', gap: 4, zIndex: 100, boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>

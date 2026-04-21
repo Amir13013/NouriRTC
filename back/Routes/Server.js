@@ -180,7 +180,7 @@ router.post("/:serverId/channels", authenticate, checkRole(["owner"]), createCha
  *       404:
  *         description: Membre introuvable
  */
-router.post("/:serverId/kick/:userId", authenticate, checkRole(["owner", "admin"]), kickUserFromServer);
+router.post("/:serverId/kick/:userId", authenticate, checkRole(["owner"]), kickUserFromServer);
 
 /**
  * @swagger
@@ -222,7 +222,7 @@ router.post("/:serverId/kick/:userId", authenticate, checkRole(["owner", "admin"
  *       403:
  *         description: Permissions insuffisantes
  */
-router.post("/:serverId/ban/:userId", authenticate, checkRole(["owner", "admin"]), banUserFromServer);
+router.post("/:serverId/ban/:userId", authenticate, checkRole(["owner"]), banUserFromServer);
 
 router.post("/:serverId/mute/:userId", authenticate, checkRole(["owner", "admin"]), muteUser);
 
