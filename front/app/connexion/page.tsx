@@ -6,7 +6,7 @@ import '../../styles/signup.css';
 
 export default function Connexion() {
   const [formData, setFormData] = useState({
-    email: '',
+    mail: '',
     password: ''
   });
   const router = useRouter();

@@ -204,7 +204,7 @@ export default function ChannelPage() {
   return (
     <div>
       <nav>
-        {(currentUserRole === 'owner' || currentUserRole === 'admin') && (
+        {currentUserRole === 'owner' && (
           <Link href={`/channelCreation/${serverId}`}>Créer un channel</Link>
         )}
         <button onClick={handleLeaveServer}>Quitter le serveur</button>

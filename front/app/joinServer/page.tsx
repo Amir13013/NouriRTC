@@ -40,9 +40,8 @@ export default function JoinServer() {
 
       const data = await response.json();
 
-      if (response.ok) {
-        alert("Serveur rejoint !");
-        // redirection vers le premier channel du serveur
+      if (response.ok || response.status === 409) {
+        // 409 = already a member — redirect anyway
         router.push(`/channel/${data.data.serverId}`);
       } else {
         alert("Erreur : " + (data.message || "Impossible de rejoindre le serveur"));
