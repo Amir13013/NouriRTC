@@ -266,28 +266,32 @@ export const updateMemberRole = async (req, res, next) => {
 export const kickUserFromServer = async (req, res, next) => {
   try {
     const { serverId, userId } = req.params;
-    const requesterRole = req.userRole; // injecté par le middleware checkRole
+    // le rôle de celui qui kick — mis dans la requête par le middleware checkRole
+    const requesterRole = req.userRole;
 
-    // Vérifier que la cible est dans le serveur
+    // je vérifie le rôle de la cible dans ce serveur
     const targetRole = await getUserRoleInServerService(serverId, userId);
+    // la cible n'est même pas dans le serveur → 404
     if (!targetRole) return handleResponse(res, 404, "User not found in this server");
 
-    // Règle : on ne peut pas kick le owner
+    // on peut jamais kick l'owner, même si on est admin
     if (targetRole.role === 'owner') {
       return handleResponse(res, 403, "Cannot kick the owner");
     }
 
-    // Règle admin vs admin : seul le owner peut kick un admin
+    // un admin ne peut pas kicker un autre admin, seul l'owner peut
     if (targetRole.role === 'admin' && requesterRole !== 'owner') {
       return handleResponse(res, 403, "Only the owner can kick an admin");
     }
 
+    // je supprime l'utilisateur de la table users_servers
     const deleted = await deleteUserFromServerService(userId, serverId);
     if (!deleted) return handleResponse(res, 404, "User not found in this server");
 
-    // Socket.IO : sortir l'utilisateur des channels du serveur
+    // je récupère l'instance Socket.IO pour déconnecter l'user en temps réel
     const io = req.app.get('io');
     if (io) {
+      // je lui envoie l'événement "member:kicked" et je coupe sa connexion socket direct
       await disconnectUserFromServer(io, userId, serverId, 'member:kicked');
     }
 
@@ -302,32 +306,35 @@ export const banUserFromServer = async (req, res, next) => {
   try {
     const { serverId, userId } = req.params;
     const { reason, expiresAt } = req.body;
-    const requesterRole = req.userRole; // injecté par le middleware checkRole
+    // le rôle de celui qui banne — mis dans la requête par checkRole
+    const requesterRole = req.userRole;
 
-    // Déjà banni ?
+    // je vérifie qu'il n'est pas déjà banni → évite les doublons
     const alreadyBanned = await isUserBannedFromServerService(userId, serverId);
     if (alreadyBanned) {
       return handleResponse(res, 400, "User is already banned from this server");
     }
 
-    // Vérifier le rôle de la cible si elle est dans le serveur
+    // je vérifie le rôle de la cible si elle est dans le serveur
     const targetRole = await getUserRoleInServerService(serverId, userId);
     if (targetRole) {
+      // on peut jamais bannir l'owner
       if (targetRole.role === 'owner') {
         return handleResponse(res, 403, "Cannot ban the owner");
       }
+      // un admin ne peut pas bannir un autre admin, seul l'owner peut
       if (targetRole.role === 'admin' && requesterRole !== 'owner') {
         return handleResponse(res, 403, "Only the owner can ban an admin");
       }
-      // Supprimer du serveur avant de bannir
+      // je le vire du serveur d'abord, puis j'enregistre le ban
       await deleteUserFromServerService(userId, serverId);
     }
 
-    // Enregistrer le ban (permanent si expiresAt absent, temporaire sinon)
+    // j'enregistre le ban en base — permanent si pas de date, temporaire sinon
     const banned = await banUserFromServerService(userId, serverId, reason || null, expiresAt || null);
     if (!banned) return handleResponse(res, 500, "Failed to ban user");
 
-    // Socket.IO : déconnecter immédiatement si l'utilisateur était connecté
+    // s'il était connecté → je coupe sa connexion socket immédiatement
     if (targetRole) {
       const io = req.app.get('io');
       if (io) {
