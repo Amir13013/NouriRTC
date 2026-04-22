@@ -1,12 +1,16 @@
 {
-  "name": "front",
-  "version": "0.1.0",
+  "name": "chatflow",
+  "version": "1.0.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "electron": "electron .",
+    "electron:dev": "concurrently --kill-others \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "next build && electron-builder --win"
   },
   "dependencies": {
     "next": "16.1.6",
@@ -21,9 +25,37 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/socket.io-client": "^1.4.36",
+    "concurrently": "^9.1.2",
+    "electron": "^34.3.4",
+    "electron-builder": "^25.1.8",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.chatflow.app",
+    "productName": "ChatFlow",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/logo-icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/logo-icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/logo-icon.png"
+    },
+    "files": [
+      "electron/**/*",
+      "public/**/*"
+    ],
+    "extraResources": []
   }
 }
