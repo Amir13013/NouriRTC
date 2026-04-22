@@ -16,6 +16,7 @@ import {
   banUserFromServerService,
   isUserBannedFromServerService,
 } from "../Models/ServerModel.js";
+import { muteUserService, isUserMutedService, unmuteUserService } from "../Models/MuteModel.js";
 import { randomBytes } from 'node:crypto';
 
 const handleResponse = (res, status, message, data = null) => {
@@ -61,7 +62,8 @@ export const joinServerWithInviteCode = async (req, res, next) => {
     const isBanned = await isUserBannedFromServerService(userId, server.id);
     if (isBanned) return handleResponse(res, 403, "You are banned from this server");
 
-    await addUserToServerService(userId, server.id);
+    const added = await addUserToServerService(userId, server.id);
+    if (!added) return handleResponse(res, 409, "Already a member of this server", { serverId: server.id });
     handleResponse(res, 200, "User added to server successfully", { serverId: server.id });
   } catch (error) {
     next(error);
@@ -176,6 +178,56 @@ export const createChannelByServerId = async (req, res, next) => {
     const createdChannel = await createChannelByServerIdService(serverId, name);
     if (!createdChannel) return handleResponse(res, 404, "Cannot create a new channel");
     handleResponse(res, 200, "Channel created successfully", createdChannel);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// MUTE
+export const muteUser = async (req, res, next) => {
+  try {
+    const { serverId, userId } = req.params;
+    const { duration } = req.body; // duration in ms
+
+    if (!duration || typeof duration !== 'number' || duration <= 0) {
+      return handleResponse(res, 400, 'duration (ms) is required');
+    }
+
+    const expiresAt = await muteUserService(userId, serverId, duration);
+
+    // Notify the muted user via socket so their UI updates immediately
+    const io = req.app.get('io');
+    if (io) {
+      const sockets = await io.fetchSockets();
+      for (const s of sockets) {
+        if (String(s.data?.userId) === String(userId)) {
+          s.emit('system:muted', { serverId, expiresAt });
+        }
+      }
+    }
+
+    handleResponse(res, 200, 'User muted', { expiresAt });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const unmuteUser = async (req, res, next) => {
+  try {
+    const { serverId, userId } = req.params;
+    await unmuteUserService(userId, serverId);
+    handleResponse(res, 200, 'User unmuted');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMuteStatus = async (req, res, next) => {
+  try {
+    const { serverId } = req.params;
+    const userId = req.user.id;
+    const status = await isUserMutedService(userId, serverId);
+    handleResponse(res, 200, 'Mute status', status);
   } catch (error) {
     next(error);
   }

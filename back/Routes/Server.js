@@ -15,6 +15,9 @@ import {
   updateMemberRole,
   kickUserFromServer,
   banUserFromServer,
+  muteUser,
+  unmuteUser,
+  getMuteStatus,
 } from "../Controllers/ServerControllers.js";
 import { authenticate } from "../middleware/authentificationJwt.js";
 import { checkRole } from "../middleware/CheckRole.js";
@@ -148,7 +151,7 @@ router.post("/", authenticate, createServer);
  */
 router.post("/join", authenticate, joinServerWithInviteCode);
 
-router.post("/:serverId/channels", authenticate, checkRole(["owner", "admin"]), createChannelByServerId);
+router.post("/:serverId/channels", authenticate, checkRole(["owner"]), createChannelByServerId);
 
 /**
  * @swagger
@@ -177,7 +180,7 @@ router.post("/:serverId/channels", authenticate, checkRole(["owner", "admin"]), 
  *       404:
  *         description: Membre introuvable
  */
-router.post("/:serverId/kick/:userId", authenticate, checkRole(["owner", "admin"]), kickUserFromServer);
+router.post("/:serverId/kick/:userId", authenticate, checkRole(["owner"]), kickUserFromServer);
 
 /**
  * @swagger
@@ -219,7 +222,13 @@ router.post("/:serverId/kick/:userId", authenticate, checkRole(["owner", "admin"
  *       403:
  *         description: Permissions insuffisantes
  */
-router.post("/:serverId/ban/:userId", authenticate, checkRole(["owner", "admin"]), banUserFromServer);
+router.post("/:serverId/ban/:userId", authenticate, checkRole(["owner"]), banUserFromServer);
+
+router.post("/:serverId/mute/:userId", authenticate, checkRole(["owner", "admin"]), muteUser);
+
+router.delete("/:serverId/mute/:userId", authenticate, checkRole(["owner", "admin"]), unmuteUser);
+
+router.get("/:serverId/mute/me", authenticate, getMuteStatus);
 
 
 // PUT

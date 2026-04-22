@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { useLanguage } from '../../../lib/useLanguage';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 let typingTimeout: any = null;
@@ -69,6 +70,13 @@ export default function ChatPage() {
   const [me, setMe]    = useState<any>(null);
   const bottomRef      = useRef<HTMLDivElement>(null);
   const token = () => localStorage.getItem('token') || '';
+
+  // ── i18n ──
+  const { lang, t }               = useLanguage();
+  const [translateOn, setTranslateOn]   = useState(false);
+  // cache: messageId -> translated text (avoids re-translating the same message)
+  const [txCache, setTxCache]     = useState<Record<string, string>>({});
+  const [txPending, setTxPending] = useState<Set<string>>(new Set());
 
   // derived — use String() everywhere for safe UUID comparisons
   const currentUserRole = members.find(m => String(m.id) === String(me?.id))?.role ?? null;
@@ -193,6 +201,43 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // ── Auto-translate new messages when toggle is ON and lang != fr ──
+  useEffect(() => {
+    if (!translateOn || lang === 'fr') return;
+    const t_ = token();
+    if (!t_) return;
+
+    const toTranslate = messages.filter(
+      m => m.type === 'chat' && !txCache[m._id] && !txPending.has(m._id)
+    );
+    if (toTranslate.length === 0) return;
+
+    // Mark as pending to avoid duplicate requests
+    setTxPending(prev => {
+      const next = new Set(prev);
+      toTranslate.forEach(m => next.add(m._id));
+      return next;
+    });
+
+    toTranslate.forEach(async (msg) => {
+      try {
+        const res = await fetch('http://localhost:3001/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t_ },
+          body: JSON.stringify({ text: msg.text, target: lang }),
+        });
+        const data = await res.json();
+        if (data.translated) {
+          setTxCache(prev => ({ ...prev, [msg._id]: data.translated }));
+        }
+      } catch {
+        // silently keep original
+      } finally {
+        setTxPending(prev => { const next = new Set(prev); next.delete(msg._id); return next; });
+      }
+    });
+  }, [messages, translateOn, lang]);
 
   // ── GIF search ────────────────────────────────────────────────────
   useEffect(() => {
@@ -335,13 +380,13 @@ export default function ChatPage() {
         <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 15, borderBottom: '1px solid #1e1f22', background: '#2b2d31' }}>
           {serverName || '…'}
           <div style={{ marginTop: 4 }}>
-            <a href="/server" style={{ fontSize: 11, color: '#5865f2', textDecoration: 'none' }}>← Mes serveurs</a>
+            <a href="/server" style={{ fontSize: 11, color: '#5865f2', textDecoration: 'none' }}>{t('backToServers')}</a>
           </div>
         </div>
 
         {/* Channel list */}
         <div style={{ padding: '8px 8px 4px', fontSize: 11, fontWeight: 700, color: '#96989d', textTransform: 'uppercase', letterSpacing: 1 }}>
-          Channels texte
+          {t('textChannels')}
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {channels.map(ch => {
@@ -372,7 +417,7 @@ export default function ChatPage() {
               href={`/channelCreation/${serverId}`}
               style={{ display: 'block', padding: '6px 10px', background: '#383a40', borderRadius: 6, color: '#96989d', fontSize: 13, textDecoration: 'none', textAlign: 'center' }}
             >
-              + Nouveau channel
+              {t('newChannel')}
             </a>
           </div>
         )}
@@ -402,9 +447,24 @@ export default function ChatPage() {
           <span style={{ fontWeight: 700, fontSize: 16 }}>{channelName}</span>
           <div style={{ flex: 1 }} />
           {online.length > 0 && (
-            <span style={{ fontSize: 12, color: '#96989d' }}>🟢 {online.length} en ligne</span>
+            <span style={{ fontSize: 12, color: '#96989d' }}>🟢 {online.length} {t('online')}</span>
           )}
-          <a href={`/channel/${serverId}`} style={{ fontSize: 12, color: '#96989d', textDecoration: 'none' }}>⚙️ Serveur</a>
+          {/* Translation toggle — only visible when lang != fr */}
+          {lang !== 'fr' && (
+            <button
+              onClick={() => setTranslateOn(o => !o)}
+              title={t('translateMessages')}
+              style={{
+                background: translateOn ? '#5865f2' : '#383a40',
+                border: '1px solid ' + (translateOn ? '#5865f2' : '#4e5058'),
+                borderRadius: 6, padding: '4px 10px', cursor: 'pointer',
+                color: 'white', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5,
+              }}
+            >
+              🌐 {t('translateMessages')}
+            </button>
+          )}
+          <a href={`/channel/${serverId}`} style={{ fontSize: 12, color: '#96989d', textDecoration: 'none' }}>{t('serverSettings')}</a>
         </div>
 
         {/* Messages */}
@@ -454,18 +514,36 @@ export default function ChatPage() {
                       {isGif(m.text) ? (
                         <img src={m.text} alt="gif" style={{ maxWidth: 260, maxHeight: 200, borderRadius: 8, display: 'block' }} />
                       ) : (
-                        <span style={{ fontSize: 14, wordBreak: 'break-word' }}>{m.text}</span>
+                        <span style={{ fontSize: 14, wordBreak: 'break-word' }}>
+                          {translateOn && lang !== 'fr' && txCache[m._id]
+                            ? txCache[m._id]
+                            : m.text}
+                        </span>
                       )}
                     </div>
 
-                    {m.isEdited && <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 4 }}>(modifié)</span>}
+                    {/* Pending translation indicator */}
+                    {translateOn && lang !== 'fr' && txPending.has(m._id) && (
+                      <span style={{ fontSize: 10, color: '#5865f2', marginLeft: 4 }}>{t('translating')}</span>
+                    )}
+                    {/* Show original link when displaying translation */}
+                    {translateOn && lang !== 'fr' && txCache[m._id] && txCache[m._id] !== m.text && (
+                      <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 4 }}>
+                        — <span
+                          title={m.text}
+                          style={{ cursor: 'help', textDecoration: 'underline dotted' }}
+                        >{t('showOriginal')}</span>
+                      </span>
+                    )}
+
+                    {m.isEdited && <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 4 }}>{t('modified')}</span>}
 
                     {/* Edit button — always visible on own messages */}
                     {canEdit(m) && (
                       <button onClick={e => { e.stopPropagation(); startEdit(m); }}
                         title="Modifier ce message"
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 12, padding: '2px 4px', marginTop: 2 }}>
-                        ✏️ modifier
+                        {t('editBtn')}
                       </button>
                     )}
 
@@ -511,9 +589,9 @@ export default function ChatPage() {
         {/* GIF picker */}
         {showGif && (
           <div style={{ margin: '0 16px 8px', background: '#2b2d31', borderRadius: 8, border: '1px solid #1e1f22', padding: 12 }} onClick={e => e.stopPropagation()}>
-            <input value={gifQ} onChange={e => setGifQ(e.target.value)} placeholder="Rechercher un GIF…" autoFocus
+            <input value={gifQ} onChange={e => setGifQ(e.target.value)} placeholder={t('searchGif')} autoFocus
               style={{ width: '100%', padding: '7px 12px', background: '#383a40', border: 'none', borderRadius: 6, color: 'white', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-            {gifLoading && <div style={{ color: '#96989d', fontSize: 12, marginTop: 8 }}>Chargement…</div>}
+            {gifLoading && <div style={{ color: '#96989d', fontSize: 12, marginTop: 8 }}>{t('loadingGif')}</div>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, maxHeight: 180, overflowY: 'auto' }}>
               {gifResults.map(g => (
                 <img key={g.id} src={g.preview || g.url} alt={g.title} onClick={() => sendGif(g)}
@@ -540,7 +618,7 @@ export default function ChatPage() {
             <input
               value={input}
               onChange={e => handleTyping(e.target.value)}
-              placeholder={isMuted ? '🔇 Vous êtes muté' : `Message #${channelName}`}
+              placeholder={isMuted ? t('mutedLabel') : `${t('messagePlaceholder')} #${channelName}`}
               disabled={isMuted}
               style={{ flex: 1, padding: '11px 8px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none', cursor: isMuted ? 'not-allowed' : 'text', opacity: isMuted ? 0.5 : 1 }}
             />

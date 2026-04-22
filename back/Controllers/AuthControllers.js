@@ -50,7 +50,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Mot de passe incorrect" });
     }
 
-    const payload = { id: user.id, mail: user.mail, name : user.name, };
+    const payload = { id: user.id, mail: user.mail, name: user.name, first_name: user.first_name };
     const accessToken = jwt.sign(
       payload,
       process.env.ACCESS_TOKEN_SECRET,
@@ -63,7 +63,9 @@ export const login = async (req, res) => {
       message: "Connexion réussie",
       user: {
         id: user.id,
-        mail: user.mail
+        mail: user.mail,
+        name: user.name,
+        first_name: user.first_name,
       }
     });
 

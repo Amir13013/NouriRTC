@@ -80,18 +80,30 @@ export const deleteServerByIdService = async (serverID) => {
 
 // CREATE
 export const createServerService = async (name, ownerId, inviteCode) => {
-  const result = await pool.query(
-    `INSERT INTO Servers (name, owner, inviteCode)
-     VALUES ($1, $2, $3)
-     RETURNING *`,
-    [name, ownerId, inviteCode]
-  );
-  const newServer = result.rows[0];
-  await pool.query(
-    `INSERT INTO users_servers (user_id, server_id, role) VALUES ($1, $2, 'owner')`,
-    [ownerId, newServer.id]
-  );
-  return newServer;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(
+      `INSERT INTO servers (name, owner, invitecode) VALUES ($1, $2, $3) RETURNING *`,
+      [name, ownerId, inviteCode]
+    );
+    const newServer = result.rows[0];
+    // ON CONFLICT ensures the owner row is always set to 'owner' even if a
+    // stale 'member' row somehow exists for this user+server combination.
+    await client.query(
+      `INSERT INTO users_servers (user_id, server_id, role)
+       VALUES ($1, $2, 'owner')
+       ON CONFLICT (user_id, server_id) DO UPDATE SET role = 'owner'`,
+      [ownerId, newServer.id]
+    );
+    await client.query('COMMIT');
+    return newServer;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 };
 
 export const createChannelByServerIdService = async (serverId, name) => {
@@ -103,6 +115,11 @@ export const createChannelByServerIdService = async (serverId, name) => {
 };
 
 export const addUserToServerService = async (userId, serverId) => {
+  const existing = await pool.query(
+    `SELECT 1 FROM users_servers WHERE user_id = $1 AND server_id = $2`,
+    [userId, serverId]
+  );
+  if (existing.rows.length > 0) return null;
   const result = await pool.query(
     `INSERT INTO users_servers (user_id, server_id) VALUES ($1, $2) RETURNING *`,
     [userId, serverId]
