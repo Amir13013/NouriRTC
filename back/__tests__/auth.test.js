@@ -1,6 +1,9 @@
+// 👉 je définis la clé secrète JWT pour les tests — pas besoin de vraie variable d'env
 process.env.ACCESS_TOKEN_SECRET = 'test-secret';
 
+// 👉 je remplace la vraie BDD par un faux — les tests n'ont pas besoin de PostgreSQL
 jest.mock('../Models/AuthModel.js');
+// 👉 je mock bcrypt pour contrôler ce qu'il retourne dans chaque test
 jest.mock('bcrypt');
 
 import request from 'supertest';
@@ -12,6 +15,8 @@ import bcrypt from 'bcrypt';
 import { createUser, login, getUser } from '../Controllers/AuthControllers.js';
 import { authenticate } from '../middleware/authentificationJwt.js';
 
+// 👉 fonction utilitaire pour créer une mini app Express par test
+// 👉 chaque test a son propre app isolé → pas d'interférence entre les tests
 const buildApp = (setup) => {
   const app = express();
   app.use(express.json());
@@ -20,10 +25,13 @@ const buildApp = (setup) => {
 };
 
 describe('createUser controller', () => {
+  // 👉 je réinitialise tous les mocks avant chaque test pour pas avoir de résidus
   beforeEach(() => jest.clearAllMocks());
 
   it('creates user and returns 201', async () => {
+    // 👉 je simule que bcrypt hash le mot de passe → retourne "hashed_pw"
     bcrypt.hash.mockResolvedValue('hashed_pw');
+    // 👉 je simule que la BDD a bien créé l'utilisateur → retourne un objet user
     createUserService.mockResolvedValue({
       id: 1, name: 'Doe', first_name: 'John', mail: 'john@test.com',
     });
@@ -82,6 +90,7 @@ describe('login controller', () => {
   });
 
   it('returns 401 when user is not found', async () => {
+    // 👉 je simule que personne n'a cet email en base → retourne null
     getUserByMailService.mockResolvedValue(null);
     const app = buildApp(a => { a.post('/login', login); });
     const res = await request(app).post('/login').send({ mail: 'x@x.com', password: 'pw' });
@@ -90,9 +99,11 @@ describe('login controller', () => {
   });
 
   it('returns 401 when password is incorrect', async () => {
+    // 👉 l'user existe en base...
     getUserByMailService.mockResolvedValue({
       id: 1, mail: 'x@x.com', password: 'hashed', name: 'A', first_name: 'B',
     });
+    // 👉 ...mais le mot de passe est incorrect → bcrypt.compare retourne false
     bcrypt.compare.mockResolvedValue(false);
 
     const app = buildApp(a => { a.post('/login', login); });
@@ -102,9 +113,11 @@ describe('login controller', () => {
   });
 
   it('returns 200 with accessToken on success', async () => {
+    // 👉 l'user existe et le mot de passe est correct → connexion réussie
     getUserByMailService.mockResolvedValue({
       id: 1, mail: 'x@x.com', password: 'hashed', name: 'Alice', first_name: 'Bob',
     });
+    // 👉 bcrypt.compare retourne true → mot de passe ok
     bcrypt.compare.mockResolvedValue(true);
 
     const app = buildApp(a => { a.post('/login', login); });

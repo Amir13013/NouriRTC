@@ -1,14 +1,20 @@
 import pool from '../Config/DataBase.js';
 import { getUserRoleInServerService } from '../Models/ServerModel.js';
 
+// 👉 ce middleware prend en paramètre la liste des rôles autorisés pour une route
+// 👉 exemple : checkRole(["owner"]) → seul l'owner passe
+// 👉 exemple : checkRole(["owner", "admin"]) → owner et admin passent
 export const checkRole = (rolesAutorises = []) => {
   return async (req, res, next) => {
     try {
       const serverId = req.params.serverId;
+      // 👉 je récupère l'ID de l'utilisateur connecté depuis le token (mis par authenticate)
       const userId   = req.user.id;
 
+      // 👉 si y'a pas de serverId dans l'URL → quelque chose cloche
       if (!serverId) return res.status(400).json({ message: 'Server ID missing' });
 
+      // 👉 je cherche le rôle de cet utilisateur dans ce serveur en base PostgreSQL
       let roleData = await getUserRoleInServerService(serverId, userId);
 
       // Safety net: if the user has no role or a wrong role in users_servers,
@@ -42,17 +48,23 @@ export const checkRole = (rolesAutorises = []) => {
         }
       }
 
+      // 👉 l'utilisateur n'est pas membre du serveur → accès refusé
       if (!roleData) {
         return res.status(403).json({ message: 'You are not a member of this server' });
       }
 
       const userRole = roleData.role;
 
+      // 👉 son rôle n'est pas dans la liste autorisée → 403
+      // 👉 par exemple si c'est un "member" et que la route demande "owner" → bloqué
       if (!rolesAutorises.includes(userRole)) {
         return res.status(403).json({ message: `Required role: ${rolesAutorises.join(', ')}` });
       }
 
+      // 👉 je colle le rôle dans la requête pour que le controller sache qui fait l'action
+      // 👉 utile pour kick/ban : le controller sait si c'est l'owner ou un admin qui agit
       req.userRole = userRole;
+      // 👉 tout est ok → on passe au controller
       next();
     } catch (err) {
       next(err);
