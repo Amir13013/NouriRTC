@@ -13,6 +13,7 @@ import setupSwagger from './Config/swagger.js';
 import Message from './Routes/Message.js';
 import Gif from './Routes/Gif.js';
 import Dm from './Routes/Dm.js';
+import Translate from './Routes/Translate.js';
 import { createMessageService } from './Models/MessageModel.js';
 import { registerMessageEditEvents } from './socketEvents/messageEditEvents.js';
 import { registerReactionEvents } from './socketEvents/reactionEvents.js';
@@ -31,6 +32,7 @@ app.use('/channels', Channels);
 app.use('/message', Message);
 app.use('/gif', Gif);
 app.use('/dm', Dm);
+app.use('/translate', Translate);
 
 setupSwagger(app);
 app.use(some_error);
