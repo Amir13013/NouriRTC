@@ -53,12 +53,12 @@ export default function Connexion() {
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Image src="/logo-icon.png" alt="ChatFlow" width={48} height={48}
-            style={{ borderRadius: 12, marginBottom: 12 }} />
+          <Image src="/logo-icon.png" alt="Let Us Link" width={64} height={64}
+            style={{ marginBottom: 12 }} />
           <h1 style={{ fontSize: 22, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>
             Connexion
           </h1>
-          <p style={{ color: '#8b949e', fontSize: 13 }}>Bienvenue sur ChatFlow</p>
+          <p style={{ color: '#8b949e', fontSize: 13 }}>Bienvenue sur Let Us Link</p>
         </div>
 
         {/* Error */}

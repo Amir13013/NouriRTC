@@ -63,12 +63,12 @@ export default function Inscription() {
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <Image src="/logo-icon.png" alt="ChatFlow" width={48} height={48}
-            style={{ borderRadius: 12, marginBottom: 12 }} />
+          <Image src="/logo-icon.png" alt="Let Us Link" width={64} height={64}
+            style={{ marginBottom: 12 }} />
           <h1 style={{ fontSize: 22, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>
             Créer un compte
           </h1>
-          <p style={{ color: '#8b949e', fontSize: 13 }}>Rejoins ChatFlow gratuitement</p>
+          <p style={{ color: '#8b949e', fontSize: 13 }}>Rejoins Let Us Link gratuitement</p>
         </div>
 
         {/* Error */}

@@ -1,7 +1,7 @@
 import '../styles/globals.css';
 
 export const metadata = {
-  title: 'ChatFlow',
+  title: 'Let Us Link',
   description: 'Messagerie temps réel',
 };
 

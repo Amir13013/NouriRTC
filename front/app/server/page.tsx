@@ -51,7 +51,7 @@ export default function ServerPage() {
       }}>
         {/* Logo */}
         <div style={{ marginBottom: 8 }}>
-          <Image src="/logo-icon.png" alt="ChatFlow" width={44} height={44} style={{ borderRadius: 14 }} />
+          <Image src="/logo-icon.png" alt="Let Us Link" width={44} height={44} />
         </div>
         <div style={{ width: 32, height: 1, background: '#21262d', margin: '4px 0' }} />
 
