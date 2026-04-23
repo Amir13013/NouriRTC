@@ -24,6 +24,17 @@ jobs:
         working-directory: ./back
         run: npm install
 
+      - name: Backend — lancer les tests unitaires (Jest + coverage)
+        working-directory: ./back
+        run: npm test
+
+      - name: Uploader le rapport de coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: back/coverage/
+
       - name: Frontend — installer les dépendances
         working-directory: ./front
         run: npm install
