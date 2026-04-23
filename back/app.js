@@ -94,6 +94,9 @@ async function startServer() {
     io.to(channelId).emit('channel users', { channelId, users });
   };
 
+  // userId → nombre de sockets actives (pour gérer plusieurs onglets)
+  const onlineUsers = new Map();
+
   io.on('connection', (socket) => {
     let displayName;
 
@@ -116,6 +119,11 @@ async function startServer() {
 
       socket.data.displayName = displayName;
       socket.emit('system', `Bienvenue ${displayName} !`);
+
+      // Marquer en ligne — incrémente le compteur pour supporter plusieurs onglets
+      const uid = String(socket.user.id);
+      onlineUsers.set(uid, (onlineUsers.get(uid) || 0) + 1);
+      io.emit('user:status', { userId: uid, online: true });
     } catch {
       // token invalide ou expiré → on coupe la connexion socket
       return socket.disconnect();
@@ -199,8 +207,19 @@ async function startServer() {
     });
 
     socket.on('disconnect', async () => {
+      if (socket.user?.id) {
+        const uid = String(socket.user.id);
+        const cnt = (onlineUsers.get(uid) || 1) - 1;
+        if (cnt <= 0) { onlineUsers.delete(uid); io.emit('user:status', { userId: uid, online: false }); }
+        else onlineUsers.set(uid, cnt);
+      }
       const room = socket.data.channelId;
       if (room) await updateUsers(room);
+    });
+
+    // Envoie la liste complète des users en ligne au client qui la demande
+    socket.on('users:getOnline', () => {
+      socket.emit('users:online', Array.from(onlineUsers.keys()));
     });
 
     // ── Modular socket event handlers ───────────────────────────────

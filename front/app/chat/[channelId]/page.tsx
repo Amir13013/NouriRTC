@@ -16,6 +16,7 @@ type Msg = {
   text: string;
   isEdited?: boolean;
   reactions?: { emoji: string; users: string[] }[];
+  createdAt?: string;
 };
 type Channel = { id: string; name: string };
 type Member  = { id: string; name: string; first_name: string; role: 'owner' | 'admin' | 'member' };
@@ -36,6 +37,9 @@ export default function ChatPage() {
   const [online,      setOnline]      = useState<string[]>([]);
   const [input,       setInput]       = useState('');
   const [typingText,  setTypingText]  = useState('');
+
+  // ── online status ──
+  const [onlineGlobal, setOnlineGlobal] = useState<Set<string>>(new Set());
 
   // ── mute ──
   const [isMuted,   setIsMuted]   = useState(false);
@@ -119,6 +123,7 @@ export default function ChatPage() {
           _id:       String(m._id),
           isEdited:  m.is_edited,
           reactions: m.reactions || [],
+          createdAt: m.createdAt,
         })));
 
         const [rSrv, rChs, rMbr, rMute] = await Promise.all([
@@ -166,6 +171,7 @@ export default function ChatPage() {
       setMessages(prev => [...prev, {
         type: 'chat', sender: data.sender, senderId: data.senderId,
         text: data.msg, _id: String(data._id), reactions: [],
+        createdAt: data.createdAt || new Date().toISOString(),
       }]);
       if (document.hidden && Notification.permission === 'granted') {
         const isGifMsg = /^https?:\/\/(media[0-9]*\.giphy\.com|i\.giphy\.com)/.test(data.msg);
@@ -207,8 +213,19 @@ export default function ChatPage() {
       setMuteUntil(new Date(data.expiresAt));
     });
 
+    // Statut en ligne
+    s.on('users:online', (ids: string[]) => setOnlineGlobal(new Set(ids)));
+    s.on('user:status', ({ userId, online }: any) =>
+      setOnlineGlobal(prev => {
+        const next = new Set(prev);
+        if (online) next.add(String(userId)); else next.delete(String(userId));
+        return next;
+      })
+    );
+
     s.connect();
     s.emit('join channel', chId);
+    s.emit('users:getOnline');
     setSocket(s);
     return () => { s.emit('leave channel', chId); s.disconnect(); };
   }, [chId]);
@@ -384,6 +401,12 @@ export default function ChatPage() {
   };
   const initials = (m?: Member | null) =>
     ((m?.first_name || m?.name || '?').charAt(0)).toUpperCase();
+
+  const formatTime = (iso?: string) => {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+    catch { return ''; }
+  };
 
   const muteCountdown = () => {
     if (!muteUntil) return '';
@@ -587,6 +610,7 @@ export default function ChatPage() {
                     )}
 
                     {m.isEdited && <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 4 }}>{t('modified')}</span>}
+                    {m.createdAt && <span style={{ fontSize: 10, color: '#484f58', marginLeft: 6 }}>{formatTime(m.createdAt)}</span>}
 
                     {/* Edit button — always visible on own messages */}
                     {canEdit(m) && (
@@ -702,8 +726,16 @@ export default function ChatPage() {
                   onMouseEnter={e => { if (activeMenu?.member.id !== member.id) (e.currentTarget as HTMLElement).style.background = '#1c2128'; }}
                   onMouseLeave={e => { if (activeMenu?.member.id !== member.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarColor(member.id), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                    {initials(member)}
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarColor(member.id), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
+                      {initials(member)}
+                    </div>
+                    <div style={{
+                      position: 'absolute', bottom: -1, right: -1,
+                      width: 11, height: 11, borderRadius: '50%',
+                      background: onlineGlobal.has(String(member.id)) ? '#3fb950' : '#6b7280',
+                      border: '2px solid #111318',
+                    }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

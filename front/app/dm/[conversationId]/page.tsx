@@ -17,6 +17,7 @@ export default function DmChatPage() {
   const [me, setMe] = useState<any>(null);
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [onlineGlobal, setOnlineGlobal] = useState<Set<string>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
   const currentUserRef = useRef<any>(null);
   const otherUserRef = useRef<any>(null);
@@ -71,6 +72,16 @@ export default function DmChatPage() {
   useEffect(() => {
     if (!convId || !token()) return;
     const s = io('http://localhost:3001', { auth: { token: token() }, autoConnect: false });
+
+    s.on('users:online', (ids: string[]) => setOnlineGlobal(new Set(ids)));
+    s.on('user:status', ({ userId, online }: any) =>
+      setOnlineGlobal(prev => {
+        const next = new Set(prev);
+        if (online) next.add(String(userId)); else next.delete(String(userId));
+        return next;
+      })
+    );
+
     s.on('dm:message', (data: any) => {
       setMessages(prev => [...prev, data]);
       if (document.hidden && Notification.permission === 'granted') {
@@ -91,6 +102,7 @@ export default function DmChatPage() {
     });
     s.connect();
     s.emit('dm:join', convId);
+    s.emit('users:getOnline');
     setSocket(s);
     return () => { s.emit('dm:leave', convId); s.disconnect(); };
   }, [convId]);
@@ -217,12 +229,20 @@ export default function DmChatPage() {
               onMouseEnter={e => { if (String(c._id) !== String(convId)) e.currentTarget.style.background = 'rgba(28,33,40,0.6)'; }}
               onMouseLeave={e => { if (String(c._id) !== String(convId)) e.currentTarget.style.background = 'transparent'; }}
             >
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%', background: avatarColor(c.otherUser?.id),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700, fontSize: 14, flexShrink: 0,
-              }}>
-                {initial(c.otherUser?.first_name)}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%', background: avatarColor(c.otherUser?.id),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, fontSize: 14,
+                }}>
+                  {initial(c.otherUser?.first_name)}
+                </div>
+                <div style={{
+                  position: 'absolute', bottom: -1, right: -1,
+                  width: 12, height: 12, borderRadius: '50%',
+                  background: onlineGlobal.has(String(c.otherUser?.id)) ? '#3fb950' : '#6b7280',
+                  border: '2px solid #111318',
+                }} />
               </div>
               <div style={{ overflow: 'hidden' }}>
                 <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
