@@ -72,7 +72,11 @@ export default function ChatPage() {
   const [muteDuration, setMuteDuration] = useState('5min');
 
   const [me, setMe]    = useState<any>(null);
-  const bottomRef      = useRef<HTMLDivElement>(null);
+  const bottomRef             = useRef<HTMLDivElement>(null);
+  const messagesContainerRef  = useRef<HTMLDivElement>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [copiedId,  setCopiedId]  = useState<string | null>(null);
+  const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
   const token = () => localStorage.getItem('token') || '';
 
   // ── i18n ──
@@ -231,7 +235,7 @@ export default function ChatPage() {
   }, [chId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!showScrollBtn) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   // ── Auto-translate new messages when toggle is ON and lang != fr ──
@@ -541,7 +545,13 @@ export default function ChatPage() {
         </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <div
+          ref={messagesContainerRef}
+          onScroll={() => {
+            const el = messagesContainerRef.current;
+            if (el) setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 150);
+          }}
+          style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 1 }}>
           {messages.map((m, i) => {
             const isMe        = me && String(m.senderId || m.sender) === String(me.id);
             const senderMbr   = members.find(mb => String(mb.id) === String(m.senderId));
@@ -557,7 +567,9 @@ export default function ChatPage() {
 
             return (
               <div key={m._id || i} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', padding: '3px 0' }}
-                onDoubleClick={() => canEdit(m) && startEdit(m)}>
+                onDoubleClick={() => canEdit(m) && startEdit(m)}
+                onMouseEnter={() => setHoveredMsg(m._id)}
+                onMouseLeave={() => setHoveredMsg(null)}>
 
                 {/* Sender label */}
                 {!isMe && (
@@ -611,6 +623,13 @@ export default function ChatPage() {
 
                     {m.isEdited && <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 4 }}>{t('modified')}</span>}
                     {m.createdAt && <span style={{ fontSize: 10, color: '#484f58', marginLeft: 6 }}>{formatTime(m.createdAt)}</span>}
+                    {hoveredMsg === m._id && !isGif(m.text) && (
+                      <button
+                        onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(m.text); setCopiedId(m._id); setTimeout(() => setCopiedId(null), 1500); }}
+                        title="Copier le message"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: copiedId === m._id ? '#3fb950' : '#6b7280', fontSize: 12, padding: '2px 4px', marginLeft: 2 }}
+                      >{copiedId === m._id ? '✓' : '📋'}</button>
+                    )}
 
                     {/* Edit button — always visible on own messages */}
                     {canEdit(m) && (
@@ -653,6 +672,20 @@ export default function ChatPage() {
               </div>
             );
           })}
+          {showScrollBtn && (
+            <div style={{ position: 'sticky', bottom: 16, alignSelf: 'flex-end', zIndex: 10 }}>
+              <button
+                onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); setShowScrollBtn(false); }}
+                title="Aller en bas"
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: '#5865f2', border: 'none', color: 'white',
+                  fontSize: 18, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >↓</button>
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
 

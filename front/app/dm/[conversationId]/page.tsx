@@ -18,9 +18,13 @@ export default function DmChatPage() {
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [onlineGlobal, setOnlineGlobal] = useState<Set<string>>(new Set());
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef            = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const currentUserRef = useRef<any>(null);
-  const otherUserRef = useRef<any>(null);
+  const otherUserRef   = useRef<any>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [copiedId,   setCopiedId]   = useState<string | null>(null);
+  const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
 
   const token = () => localStorage.getItem('token') || '';
 
@@ -66,7 +70,7 @@ export default function DmChatPage() {
   }, [convId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!showScrollBtn) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
@@ -292,7 +296,13 @@ export default function DmChatPage() {
         </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div
+          ref={messagesContainerRef}
+          onScroll={() => {
+            const el = messagesContainerRef.current;
+            if (el) setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 150);
+          }}
+          style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {messages.length === 0 && otherUser && (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#8b949e' }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>
@@ -313,11 +323,14 @@ export default function DmChatPage() {
           {messages.map((m, i) => {
             const isMe = currentUserRef.current && m.senderId === currentUserRef.current.id;
             const showAvatar = !isMe && (i === 0 || messages[i - 1]?.senderId !== m.senderId);
+            const msgKey = m._id || String(i);
             return (
-              <div key={m._id || i} style={{
+              <div key={msgKey} style={{
                 display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start',
                 alignItems: 'flex-end', gap: 8, paddingLeft: !isMe && !showAvatar ? 44 : 0,
-              }}>
+              }}
+                onMouseEnter={() => setHoveredMsg(msgKey)}
+                onMouseLeave={() => setHoveredMsg(null)}>
                 {!isMe && showAvatar && (
                   <div style={{
                     width: 32, height: 32, borderRadius: '50%', background: avatarColor(otherUser?.id),
@@ -327,18 +340,48 @@ export default function DmChatPage() {
                     {initial(otherUser?.first_name)}
                   </div>
                 )}
-                <div style={{
-                  maxWidth: '65%', padding: '8px 14px', borderRadius: 16,
-                  background: isMe ? '#5865f2' : '#161b22',
-                  color: '#e6edf3', fontSize: 14, lineHeight: 1.5,
-                  borderBottomRightRadius: isMe ? 4 : 16,
-                  borderBottomLeftRadius: !isMe ? 4 : 16,
-                }}>
-                  {m.content}
+                <div style={{ position: 'relative', maxWidth: '65%' }}>
+                  <div style={{
+                    padding: '8px 14px', borderRadius: 16,
+                    background: isMe ? '#5865f2' : '#161b22',
+                    color: '#e6edf3', fontSize: 14, lineHeight: 1.5,
+                    borderBottomRightRadius: isMe ? 4 : 16,
+                    borderBottomLeftRadius: !isMe ? 4 : 16,
+                  }}>
+                    {m.content}
+                  </div>
+                  {hoveredMsg === msgKey && (
+                    <button
+                      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(m.content); setCopiedId(msgKey); setTimeout(() => setCopiedId(null), 1500); }}
+                      title="Copier"
+                      style={{
+                        position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+                        right: isMe ? 'calc(100% + 6px)' : 'auto',
+                        left: isMe ? 'auto' : 'calc(100% + 6px)',
+                        background: '#21262d', border: '1px solid #30363d', borderRadius: 6,
+                        cursor: 'pointer', color: copiedId === msgKey ? '#3fb950' : '#8b949e',
+                        fontSize: 13, padding: '3px 7px', whiteSpace: 'nowrap',
+                      }}
+                    >{copiedId === msgKey ? '✓' : '📋'}</button>
+                  )}
                 </div>
               </div>
             );
           })}
+          {showScrollBtn && (
+            <div style={{ position: 'sticky', bottom: 16, alignSelf: 'flex-end', zIndex: 10 }}>
+              <button
+                onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); setShowScrollBtn(false); }}
+                title="Aller en bas"
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: '#5865f2', border: 'none', color: 'white',
+                  fontSize: 18, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >↓</button>
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
 
