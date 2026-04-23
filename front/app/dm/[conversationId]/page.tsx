@@ -4,6 +4,25 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 
+function renderText(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g;
+  let last = 0; let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > last) parts.push(text.slice(last, match.index));
+    const raw = match[0];
+    if (raw.startsWith('**'))
+      parts.push(<strong key={match.index}>{raw.slice(2, -2)}</strong>);
+    else if (raw.startsWith('*'))
+      parts.push(<em key={match.index}>{raw.slice(1, -1)}</em>);
+    else
+      parts.push(<code key={match.index} style={{ background: 'rgba(0,0,0,0.35)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace', fontSize: 13 }}>{raw.slice(1, -1)}</code>);
+    last = match.index + raw.length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
+}
+
 export default function DmChatPage() {
   const { conversationId } = useParams();
   const convId = Array.isArray(conversationId) ? conversationId[0] : conversationId;
@@ -20,6 +39,7 @@ export default function DmChatPage() {
   const [onlineGlobal, setOnlineGlobal] = useState<Set<string>>(new Set());
   const bottomRef            = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const dmInputRef           = useRef<HTMLTextAreaElement>(null);
   const currentUserRef = useRef<any>(null);
   const otherUserRef   = useRef<any>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -138,6 +158,7 @@ export default function DmChatPage() {
     if (!input.trim() || !socket) return;
     socket.emit('dm:send', { conversationId: convId, content: input.trim() });
     setInput('');
+    if (dmInputRef.current) dmInputRef.current.style.height = 'auto';
   };
 
   return (
@@ -348,7 +369,7 @@ export default function DmChatPage() {
                     borderBottomRightRadius: isMe ? 4 : 16,
                     borderBottomLeftRadius: !isMe ? 4 : 16,
                   }}>
-                    {m.content}
+                    {renderText(m.content)}
                   </div>
                   {hoveredMsg === msgKey && (
                     <button
@@ -390,13 +411,24 @@ export default function DmChatPage() {
           padding: '12px 20px', borderTop: '1px solid #1c2128',
           display: 'flex', gap: 10, background: '#0e1117', flexShrink: 0,
         }}>
-          <input
-            value={input} onChange={e => setInput(e.target.value)}
+          <textarea
+            ref={dmInputRef}
+            value={input}
+            onChange={e => {
+              setInput(e.target.value);
+              if (dmInputRef.current) {
+                dmInputRef.current.style.height = 'auto';
+                dmInputRef.current.style.height = Math.min(dmInputRef.current.scrollHeight, 120) + 'px';
+              }
+            }}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(e as any); } }}
             placeholder={`Message ${otherUser?.first_name ? '@' + otherUser.first_name : '…'}`}
+            rows={1}
             style={{
               flex: 1, padding: '11px 16px', background: '#161b22',
               border: '1px solid #21262d', borderRadius: 10, color: '#e6edf3',
-              fontSize: 14, outline: 'none',
+              fontSize: 14, outline: 'none', resize: 'none', overflow: 'hidden',
+              lineHeight: '1.4', fontFamily: 'inherit',
             }}
             onFocus={e => (e.target.style.borderColor = '#5865f2')}
             onBlur={e => (e.target.style.borderColor = '#21262d')}

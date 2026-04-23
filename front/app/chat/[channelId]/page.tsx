@@ -72,8 +72,10 @@ export default function ChatPage() {
   const [muteDuration, setMuteDuration] = useState('5min');
 
   const [me, setMe]    = useState<any>(null);
+  const [gifModal, setGifModal] = useState<string | null>(null);
   const bottomRef             = useRef<HTMLDivElement>(null);
   const messagesContainerRef  = useRef<HTMLDivElement>(null);
+  const inputRef              = useRef<HTMLTextAreaElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [copiedId,  setCopiedId]  = useState<string | null>(null);
   const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
@@ -305,6 +307,10 @@ export default function ChatPage() {
   // ── actions ───────────────────────────────────────────────────────
   const handleTyping = (v: string) => {
     setInput(v);
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + 'px';
+    }
     if (!socket) return;
     socket.emit('typing', { channelId: chId, isTyping: true });
     clearTimeout(typingTimeout);
@@ -317,6 +323,7 @@ export default function ChatPage() {
     socket.emit('channel message', { channelId: chId, msg: input.trim() });
     socket.emit('typing', { channelId: chId, isTyping: false });
     setInput('');
+    if (inputRef.current) inputRef.current.style.height = 'auto';
   };
 
   const sendGif = (gif: any) => {
@@ -597,12 +604,10 @@ export default function ChatPage() {
                       borderBottomLeftRadius:  isMe ? 12 : 4,
                     }}>
                       {isGif(m.text) ? (
-                        <img src={m.text} alt="gif" style={{ maxWidth: 260, maxHeight: 200, borderRadius: 8, display: 'block' }} />
+                        <img src={m.text} alt="gif" onClick={e => { e.stopPropagation(); setGifModal(m.text); }} style={{ maxWidth: 260, maxHeight: 200, borderRadius: 8, display: 'block', cursor: 'zoom-in' }} />
                       ) : (
                         <span style={{ fontSize: 14, wordBreak: 'break-word' }}>
-                          {translateOn && lang !== 'fr' && txCache[m._id]
-                            ? txCache[m._id]
-                            : m.text}
+                          {renderText(translateOn && lang !== 'fr' && txCache[m._id] ? txCache[m._id] : m.text)}
                         </span>
                       )}
                     </div>
@@ -722,12 +727,15 @@ export default function ChatPage() {
               style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: '0 4px', color: showGif ? '#5865f2' : '#8b949e' }}>
               🎬
             </button>
-            <input
+            <textarea
+              ref={inputRef}
               value={input}
               onChange={e => handleTyping(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(e as any); } }}
               placeholder={isMuted ? t('mutedLabel') : `${t('messagePlaceholder')} #${channelName}`}
               disabled={isMuted}
-              style={{ flex: 1, padding: '11px 8px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none', cursor: isMuted ? 'not-allowed' : 'text', opacity: isMuted ? 0.5 : 1 }}
+              rows={1}
+              style={{ flex: 1, padding: '11px 8px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none', cursor: isMuted ? 'not-allowed' : 'text', opacity: isMuted ? 0.5 : 1, resize: 'none', overflow: 'hidden', lineHeight: '1.4', fontFamily: 'inherit' }}
             />
             <button type="submit" disabled={!input.trim() || isMuted}
               style={{ background: input.trim() && !isMuted ? '#5865f2' : 'transparent', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', color: input.trim() && !isMuted ? 'white' : '#8b949e', fontWeight: 700, fontSize: 16, transition: 'background 0.1s' }}>
@@ -860,8 +868,38 @@ export default function ChatPage() {
           </div>
         </div>
       )}
+
+      {/* ═══════════════ GIF FULLSCREEN ═══════════════ */}
+      {gifModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, cursor: 'zoom-out' }}
+          onClick={() => setGifModal(null)}
+        >
+          <img src={gifModal} alt="gif" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 12, boxShadow: '0 8px 40px rgba(0,0,0,0.8)' }} />
+        </div>
+      )}
     </div>
   );
+}
+
+// ── markdown renderer ─────────────────────────────────────────────
+function renderText(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g;
+  let last = 0; let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > last) parts.push(text.slice(last, match.index));
+    const raw = match[0];
+    if (raw.startsWith('**'))
+      parts.push(<strong key={match.index}>{raw.slice(2, -2)}</strong>);
+    else if (raw.startsWith('*'))
+      parts.push(<em key={match.index}>{raw.slice(1, -1)}</em>);
+    else
+      parts.push(<code key={match.index} style={{ background: 'rgba(0,0,0,0.35)', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace', fontSize: 13 }}>{raw.slice(1, -1)}</code>);
+    last = match.index + raw.length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
 }
 
 // ── shared micro-styles ────────────────────────────────────────────
