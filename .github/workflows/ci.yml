@@ -1,0 +1,41 @@
+name: CI — Intégration Continue
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Vérification du projet
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backend — installer les dépendances
+        working-directory: ./back
+        run: npm install
+
+      - name: Frontend — installer les dépendances
+        working-directory: ./front
+        run: npm install
+
+      - name: Frontend — lint (non bloquant)
+        working-directory: ./front
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Valider la configuration Docker Compose
+        run: |
+          # On crée un .env minimal pour que docker compose config ne plante pas
+          cp .env .env.ci 2>/dev/null || touch .env.ci
+          docker compose --env-file .env.ci config --quiet && echo "docker-compose.yml valide"
+        continue-on-error: true

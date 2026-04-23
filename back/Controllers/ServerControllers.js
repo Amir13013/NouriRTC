@@ -23,7 +23,7 @@ const handleResponse = (res, status, message, data = null) => {
   res.status(status).json({ status, message, data });
 };
 
-// Déconnecte un utilisateur de tous les channels d'un serveur via Socket.IO
+// Déconnexion utilisateur  via Socket.IO
 const disconnectUserFromServer = async (io, userId, serverId, eventName) => {
   const channels = await getAllChannelByServerIdService(serverId);
   const channelIds = channels.map(c => String(c.id));
@@ -34,7 +34,7 @@ const disconnectUserFromServer = async (io, userId, serverId, eventName) => {
       for (const channelId of channelIds) {
         await s.leave(channelId);
       }
-      // Notifie le client PUIS coupe la connexion socket immédiatement
+      // Notification client + connexion socket
       s.emit(eventName, { serverId, userId });
       s.disconnect(true);
     }
@@ -128,7 +128,7 @@ export const getAllChannelByServerId = async (req, res, next) => {
   }
 };
 
-// DELETE
+// Supprimer un user du serveur xz
 export const deleteUserFromServer = async (req, res, next) => {
   try {
     const { serverId } = req.params;
@@ -154,7 +154,7 @@ export const deleteServerById = async (req, res, next) => {
   }
 };
 
-// CREATE
+// creation du serveur 
 export const createServer = async (req, res, next) => {
   try {
     const { name } = req.body;
@@ -187,7 +187,7 @@ export const createChannelByServerId = async (req, res, next) => {
 export const muteUser = async (req, res, next) => {
   try {
     const { serverId, userId } = req.params;
-    const { duration } = req.body; // duration in ms
+    const { duration } = req.body; 
 
     if (!duration || typeof duration !== 'number' || duration <= 0) {
       return handleResponse(res, 400, 'duration (ms) is required');
@@ -195,7 +195,7 @@ export const muteUser = async (req, res, next) => {
 
     const expiresAt = await muteUserService(userId, serverId, duration);
 
-    // Notify the muted user via socket so their UI updates immediately
+    
     const io = req.app.get('io');
     if (io) {
       const sockets = await io.fetchSockets();

@@ -2,87 +2,125 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import '../../styles/signup.css';
+import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Connexion() {
-  const [formData, setFormData] = useState({
-    mail: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ mail: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [id]: value
-    }));
+    setError('');
+    setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setLoading(true);
+    setError('');
     try {
-      const response = await fetch("http://localhost:3001/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('http://localhost:3001/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.success) {
         localStorage.setItem('token', data.accessToken);
         localStorage.setItem('user', JSON.stringify(data.user));
-
-        console.log('TOKEN SAUVÉ:', data.accessToken);
-        
-        alert("Connexion réussie !");
-        router.push("/server"); // redirection vers l'accueil
+        router.push('/server');
       } else {
-        alert("Erreur : " + (data.message || "Identifiants incorrects"));
+        setError(data.message || 'Identifiants incorrects');
       }
-    } catch (error) {
-      alert("Erreur de connexion au serveur !");
-      console.error(error);
+    } catch {
+      setError('Impossible de contacter le serveur');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="signup-container">
-      <div className="section employeur">
-        <h1>Connexion</h1>
+    <div style={{
+      minHeight: '100vh', background: '#0e1117',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+    }}>
+      <div style={{
+        background: '#161b22', border: '1px solid #21262d', borderRadius: 16,
+        padding: '40px 44px', width: '100%', maxWidth: 420,
+        boxShadow: '0 8px 48px rgba(0,0,0,0.5)',
+      }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <Image src="/logo-icon.png" alt="ChatFlow" width={48} height={48}
+            style={{ borderRadius: 12, marginBottom: 12 }} />
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>
+            Connexion
+          </h1>
+          <p style={{ color: '#8b949e', fontSize: 13 }}>Bienvenue sur ChatFlow</p>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="mail">Email :</label>
-            <input
-              id="mail"
-              type="text"
-              value={formData.mail}
-              onChange={handleChange}
-              required
-            />
+        {/* Error */}
+        {error && (
+          <div style={{
+            background: 'rgba(248,81,73,0.12)', border: '1px solid rgba(248,81,73,0.35)',
+            borderRadius: 8, padding: '10px 14px', color: '#f85149', fontSize: 13, marginBottom: 20,
+          }}>
+            {error}
           </div>
+        )}
 
-          <div className="form-group">
-            <label htmlFor="password">Mot de passe :</label>
-            <input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {([
+            { id: 'mail', label: 'Email', type: 'email' },
+            { id: 'password', label: 'Mot de passe', type: 'password' },
+          ] as const).map(f => (
+            <div key={f.id}>
+              <label style={{
+                display: 'block', fontSize: 11, fontWeight: 700, color: '#8b949e',
+                marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.6,
+              }}>
+                {f.label}
+              </label>
+              <input
+                id={f.id}
+                type={f.type}
+                value={formData[f.id as keyof typeof formData]}
+                onChange={handleChange}
+                required
+                style={{
+                  width: '100%', padding: '10px 14px', background: '#21262d',
+                  border: '1px solid #30363d', borderRadius: 8, color: '#e6edf3',
+                  fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                }}
+                onFocus={e => (e.target.style.borderColor = '#5865f2')}
+                onBlur={e => (e.target.style.borderColor = '#30363d')}
+              />
+            </div>
+          ))}
 
-          <button type="submit">Connexion</button>
+          <button type="submit" disabled={loading} style={{
+            marginTop: 4, padding: '11px', background: loading ? '#3d4494' : '#5865f2',
+            border: 'none', borderRadius: 8, color: 'white', fontWeight: 700,
+            fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer',
+            boxShadow: '0 2px 12px rgba(88,101,242,0.35)',
+          }}>
+            {loading ? 'Connexion…' : 'Se connecter'}
+          </button>
         </form>
-      </div>
 
-      <a href="/" className="formation-link home-link">
-        Retour à la page d'accueil
-      </a>
+        <div style={{ marginTop: 24, textAlign: 'center', fontSize: 13, color: '#8b949e' }}>
+          Pas encore de compte ?{' '}
+          <Link href="/inscription" style={{ color: '#5865f2', fontWeight: 600 }}>
+            S'inscrire
+          </Link>
+        </div>
+        <div style={{ marginTop: 10, textAlign: 'center' }}>
+          <Link href="/" style={{ fontSize: 12, color: '#484f58' }}>← Retour à l'accueil</Link>
+        </div>
+      </div>
     </div>
   );
 }

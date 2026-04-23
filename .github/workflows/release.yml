@@ -1,0 +1,32 @@
+name: Release — Déploiement de version
+
+# Se déclenche quand tu pousses un tag de la forme v1.0.0 / v1.1.2 / v2.0.0
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# Nécessaire pour créer des releases GitHub
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Créer la release GitHub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code (historique complet)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Créer la release avec changelog automatique
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --generate-notes = GitHub génère automatiquement le changelog
+          # depuis le tag précédent jusqu'à celui-ci (commits + PRs)
+          gh release create "${{ github.ref_name }}" \
+            --title "ChatFlow ${{ github.ref_name }}" \
+            --generate-notes

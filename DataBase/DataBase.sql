@@ -43,6 +43,18 @@ CREATE TABLE channels (
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS banned_users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    server_id UUID NOT NULL,
+    reason TEXT,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT banned_users_unique UNIQUE (user_id, server_id),
+    FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE,
+    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
+);
+
 -- USERS 
 INSERT INTO users (id, name, first_name, phone_number, mail, password) VALUES
 ('00000000-0000-0000-0000-000000000001','Martin','Lucas','0611111111','lucas.martin@mail.com','password'),

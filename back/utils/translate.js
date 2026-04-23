@@ -17,15 +17,31 @@ export const translateText = async (text, target) => {
   try {
     // j'appelle l'API LibreTranslate (gratuite et open source)
     // je mets un timeout de 6 secondes — si l'API répond pas → on abandonne proprement
-    const res = await fetch('https://libretranslate.de/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ q: text, source: 'fr', target, format: 'text' }),
-      signal: AbortSignal.timeout(6000),
-    });
+    // liste de fallbacks : on essaie dans l'ordre jusqu'à ce qu'un réponde
+    const ENDPOINTS = [
+      'https://translate.argosopentech.com/translate',
+      'https://translate.fedilab.app/translate',
+      'https://lt.vern.cc/translate',
+    ];
 
-    // si l'API retourne une erreur HTTP → je lance une exception → catch → fallback
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let res;
+    let lastErr;
+    for (const url of ENDPOINTS) {
+      try {
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ q: text, source: 'fr', target, format: 'text', api_key: '' }),
+          signal: AbortSignal.timeout(6000),
+        });
+        if (res.ok) break; // on a trouvé un endpoint qui répond
+        lastErr = new Error(`HTTP ${res.status} from ${url}`);
+      } catch (e) {
+        lastErr = e;
+        res = undefined;
+      }
+    }
+    if (!res?.ok) throw lastErr ?? new Error('all endpoints failed');
 
     const data = await res.json();
     // si la traduction est vide pour une raison quelconque → je garde le texte original

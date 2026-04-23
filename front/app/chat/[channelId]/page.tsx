@@ -72,7 +72,7 @@ export default function ChatPage() {
   const token = () => localStorage.getItem('token') || '';
 
   // ── i18n ──
-  const { lang, t }               = useLanguage();
+  const { lang, setLang, t }      = useLanguage();
   const [translateOn, setTranslateOn]   = useState(false);
   // cache: messageId -> translated text (avoids re-translating the same message)
   const [txCache, setTxCache]     = useState<Record<string, string>>({});
@@ -85,6 +85,13 @@ export default function ChatPage() {
   useEffect(() => {
     const u = localStorage.getItem('user');
     if (u) setMe(JSON.parse(u));
+  }, []);
+
+  // ── notification permission ────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }, []);
 
   useEffect(() => {
@@ -155,12 +162,20 @@ export default function ChatPage() {
     s.on('system', (msg: string) =>
       setMessages(prev => [...prev, { type: 'system', text: msg, _id: Date.now().toString() }])
     );
-    s.on('channel message', (data: any) =>
+    s.on('channel message', (data: any) => {
       setMessages(prev => [...prev, {
         type: 'chat', sender: data.sender, senderId: data.senderId,
         text: data.msg, _id: String(data._id), reactions: [],
-      }])
-    );
+      }]);
+      if (document.hidden && Notification.permission === 'granted') {
+        const isGifMsg = /^https?:\/\/(media[0-9]*\.giphy\.com|i\.giphy\.com)/.test(data.msg);
+        new Notification(data.sender || 'Nouveau message', {
+          body: isGifMsg ? 'a envoyé un GIF' : (data.msg.length > 100 ? data.msg.slice(0, 100) + '…' : data.msg),
+          icon: '/logo-icon.png',
+          tag: 'channel-msg',
+        });
+      }
+    });
     s.on('channel users', (data: any) => {
       if (String(data.channelId) === String(chId)) setOnline(data.users);
     });
@@ -239,9 +254,20 @@ export default function ChatPage() {
     });
   }, [messages, translateOn, lang]);
 
-  // ── GIF search ────────────────────────────────────────────────────
+  // ── GIF: load trending when picker opens, search otherwise ───────
   useEffect(() => {
-    if (!gifQ.trim()) { setGifResults([]); return; }
+    if (!showGif) return;
+    if (gifQ.trim()) return; // search effect handles this
+    setGifLoading(true);
+    fetch(`http://localhost:3001/gif/trending?limit=16`, { headers: { Authorization: 'Bearer ' + token() } })
+      .then(r => r.json())
+      .then(d => setGifResults(d.data || []))
+      .catch(() => {})
+      .finally(() => setGifLoading(false));
+  }, [showGif]);
+
+  useEffect(() => {
+    if (!gifQ.trim()) return; // empty → trending stays visible
     const id = setTimeout(async () => {
       setGifLoading(true);
       try {
@@ -348,7 +374,8 @@ export default function ChatPage() {
   };
 
   // ── helpers ───────────────────────────────────────────────────────
-  const isGif = (text: string) => /^https?:\/\/media[0-9]*\.giphy\.com/.test(text);
+  const isGif = (text: string) =>
+    /^https?:\/\/(media[0-9]*\.giphy\.com|i\.giphy\.com|media\.tenor\.com)/.test(text);
 
   const avatarColor = (id = '') => {
     const palette = ['#5865f2','#57f287','#fee75c','#eb459e','#ed4245','#3ba55d'];
@@ -366,18 +393,18 @@ export default function ChatPage() {
   };
 
   // ── render ────────────────────────────────────────────────────────
-  const closeAll = () => { setEmojiPickerFor(null); setActiveMenu(null); setShowGif(false); };
+  const closeAll = () => { setEmojiPickerFor(null); setActiveMenu(null); setShowGif(false); setGifQ(''); setGifResults([]); };
 
   return (
     <div
-      style={{ display: 'flex', height: '100vh', background: '#313338', color: 'white', fontFamily: 'sans-serif', overflow: 'hidden' }}
+      style={{ display: 'flex', height: '100vh', background: '#0e1117', color: '#e6edf3', fontFamily: 'sans-serif', overflow: 'hidden' }}
       onClick={closeAll}
     >
 
       {/* ═══════════════ CHANNELS SIDEBAR ═══════════════ */}
-      <aside style={{ width: 220, background: '#2b2d31', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1e1f22', flexShrink: 0 }}>
+      <aside style={{ width: 220, background: '#111318', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1c2128', flexShrink: 0 }}>
         {/* Server name */}
-        <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 15, borderBottom: '1px solid #1e1f22', background: '#2b2d31' }}>
+        <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: 15, borderBottom: '1px solid #1c2128', background: '#111318' }}>
           {serverName || '…'}
           <div style={{ marginTop: 4 }}>
             <a href="/server" style={{ fontSize: 11, color: '#5865f2', textDecoration: 'none' }}>{t('backToServers')}</a>
@@ -385,7 +412,7 @@ export default function ChatPage() {
         </div>
 
         {/* Channel list */}
-        <div style={{ padding: '8px 8px 4px', fontSize: 11, fontWeight: 700, color: '#96989d', textTransform: 'uppercase', letterSpacing: 1 }}>
+        <div style={{ padding: '8px 8px 4px', fontSize: 11, fontWeight: 700, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1 }}>
           {t('textChannels')}
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -398,13 +425,13 @@ export default function ChatPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '5px 12px', cursor: 'pointer', borderRadius: 4, margin: '1px 8px',
-                  background: active ? '#404249' : 'transparent',
-                  color: active ? '#fff' : '#96989d', fontSize: 14,
+                  background: active ? '#1c2128' : 'transparent',
+                  color: active ? '#e6edf3' : '#8b949e', fontSize: 14,
                 }}
-                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = '#35373c'; }}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = '#1c2128'; }}
                 onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               >
-                <span style={{ color: '#96989d' }}>#</span> {ch.name}
+                <span style={{ color: '#8b949e' }}>#</span> {ch.name}
               </div>
             );
           })}
@@ -412,10 +439,10 @@ export default function ChatPage() {
 
         {/* Create channel (owner only) */}
         {currentUserRole === 'owner' && (
-          <div style={{ padding: 8, borderTop: '1px solid #1e1f22' }}>
+          <div style={{ padding: 8, borderTop: '1px solid #1c2128' }}>
             <a
               href={`/channelCreation/${serverId}`}
-              style={{ display: 'block', padding: '6px 10px', background: '#383a40', borderRadius: 6, color: '#96989d', fontSize: 13, textDecoration: 'none', textAlign: 'center' }}
+              style={{ display: 'block', padding: '6px 10px', background: '#21262d', borderRadius: 6, color: '#8b949e', fontSize: 13, textDecoration: 'none', textAlign: 'center' }}
             >
               {t('newChannel')}
             </a>
@@ -423,7 +450,7 @@ export default function ChatPage() {
         )}
 
         {/* Current user panel */}
-        <div style={{ padding: '8px 12px', borderTop: '1px solid #1e1f22', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: '8px 12px', borderTop: '1px solid #1c2128', display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarColor(me?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
             {((me?.first_name || me?.name || '?').charAt(0)).toUpperCase()}
           </div>
@@ -442,29 +469,52 @@ export default function ChatPage() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
         {/* Topbar */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e1f22', display: 'flex', alignItems: 'center', gap: 10, background: '#313338', flexShrink: 0 }}>
-          <span style={{ color: '#96989d', fontSize: 20, fontWeight: 300 }}>#</span>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid #1c2128', display: 'flex', alignItems: 'center', gap: 10, background: '#0e1117', flexShrink: 0 }}>
+          <span style={{ color: '#8b949e', fontSize: 20, fontWeight: 300 }}>#</span>
           <span style={{ fontWeight: 700, fontSize: 16 }}>{channelName}</span>
           <div style={{ flex: 1 }} />
           {online.length > 0 && (
-            <span style={{ fontSize: 12, color: '#96989d' }}>🟢 {online.length} {t('online')}</span>
+            <span style={{ fontSize: 12, color: '#8b949e' }}>🟢 {online.length} {t('online')}</span>
           )}
-          {/* Translation toggle — only visible when lang != fr */}
+
+          {/* Language picker — always visible */}
+          <select
+            value={lang}
+            onChange={e => {
+              const chosen = e.target.value as 'fr' | 'en' | 'es';
+              setLang(chosen);
+              // active la traduction automatiquement dès qu'on passe à EN/ES
+              setTranslateOn(chosen !== 'fr');
+              // vide le cache pour retraduire avec la nouvelle langue
+              setTxCache({});
+            }}
+            style={{
+              padding: '4px 8px', background: '#21262d', border: '1px solid #30363d',
+              borderRadius: 6, color: '#e6edf3', fontSize: 12, cursor: 'pointer', outline: 'none',
+            }}
+          >
+            <option value="fr">🇫🇷 FR</option>
+            <option value="en">🇬🇧 EN</option>
+            <option value="es">🇪🇸 ES</option>
+          </select>
+
+          {/* Indicateur actif quand traduction en cours */}
           {lang !== 'fr' && (
-            <button
+            <span style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '4px 8px', background: translateOn ? 'rgba(88,101,242,0.15)' : 'transparent',
+              border: `1px solid ${translateOn ? '#5865f2' : 'transparent'}`,
+              borderRadius: 6, fontSize: 12, color: translateOn ? '#5865f2' : '#8b949e',
+              cursor: 'pointer',
+            }}
               onClick={() => setTranslateOn(o => !o)}
               title={t('translateMessages')}
-              style={{
-                background: translateOn ? '#5865f2' : '#383a40',
-                border: '1px solid ' + (translateOn ? '#5865f2' : '#4e5058'),
-                borderRadius: 6, padding: '4px 10px', cursor: 'pointer',
-                color: 'white', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5,
-              }}
             >
-              🌐 {t('translateMessages')}
-            </button>
+              🌐 {translateOn ? t('translateMessages') : t('showOriginal')}
+            </span>
           )}
-          <a href={`/channel/${serverId}`} style={{ fontSize: 12, color: '#96989d', textDecoration: 'none' }}>{t('serverSettings')}</a>
+
+          <a href={`/channel/${serverId}`} style={{ fontSize: 12, color: '#8b949e', textDecoration: 'none' }}>{t('serverSettings')}</a>
         </div>
 
         {/* Messages */}
@@ -477,7 +527,7 @@ export default function ChatPage() {
               : (m.sender?.length === 36 ? 'Utilisateur inconnu' : m.sender);
 
             if (m.type === 'system') return (
-              <div key={m._id || i} style={{ textAlign: 'center', color: '#96989d', fontSize: 11, padding: '2px 0' }}>
+              <div key={m._id || i} style={{ textAlign: 'center', color: '#8b949e', fontSize: 11, padding: '2px 0' }}>
                 {m.text}
               </div>
             );
@@ -488,7 +538,7 @@ export default function ChatPage() {
 
                 {/* Sender label */}
                 {!isMe && (
-                  <div style={{ fontSize: 11, color: '#96989d', marginBottom: 2, paddingLeft: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 2, paddingLeft: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     {senderLabel}
                     {senderMbr?.role === 'owner' && <span>👑</span>}
                     {senderMbr?.role === 'admin' && <span>🛡️</span>}
@@ -498,7 +548,7 @@ export default function ChatPage() {
                 {editingId === m._id ? (
                   <form onSubmit={submitEdit} style={{ display: 'flex', gap: 6, width: '60%' }}>
                     <input value={editContent} onChange={e => setEditContent(e.target.value)} autoFocus
-                      style={{ flex: 1, padding: '6px 10px', background: '#1a1a1a', border: '1px solid #5865f2', borderRadius: 6, color: 'white', fontSize: 14, outline: 'none' }} />
+                      style={{ flex: 1, padding: '6px 10px', background: '#0e1117', border: '1px solid #5865f2', borderRadius: 6, color: 'white', fontSize: 14, outline: 'none' }} />
                     <button type="submit" style={{ background: '#5865f2', border: 'none', color: 'white', padding: '6px 12px', borderRadius: 6, cursor: 'pointer' }}>✓</button>
                     <button type="button" onClick={() => setEditingId(null)} style={{ background: '#4b5563', border: 'none', color: 'white', padding: '6px 12px', borderRadius: 6, cursor: 'pointer' }}>✕</button>
                   </form>
@@ -507,7 +557,7 @@ export default function ChatPage() {
                     <div style={{
                       padding: isGif(m.text) ? 4 : '8px 12px',
                       borderRadius: 12,
-                      background: isMe ? '#5865f2' : '#36393f',
+                      background: isMe ? '#5865f2' : '#161b22',
                       borderBottomRightRadius: isMe ? 4 : 12,
                       borderBottomLeftRadius:  isMe ? 12 : 4,
                     }}>
@@ -583,15 +633,15 @@ export default function ChatPage() {
         </div>
 
         {typingText && (
-          <div style={{ padding: '0 16px 4px', fontSize: 12, color: '#96989d' }}>{typingText}</div>
+          <div style={{ padding: '0 16px 4px', fontSize: 12, color: '#8b949e' }}>{typingText}</div>
         )}
 
         {/* GIF picker */}
         {showGif && (
-          <div style={{ margin: '0 16px 8px', background: '#2b2d31', borderRadius: 8, border: '1px solid #1e1f22', padding: 12 }} onClick={e => e.stopPropagation()}>
+          <div style={{ margin: '0 16px 8px', background: '#111318', borderRadius: 8, border: '1px solid #1c2128', padding: 12 }} onClick={e => e.stopPropagation()}>
             <input value={gifQ} onChange={e => setGifQ(e.target.value)} placeholder={t('searchGif')} autoFocus
-              style={{ width: '100%', padding: '7px 12px', background: '#383a40', border: 'none', borderRadius: 6, color: 'white', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-            {gifLoading && <div style={{ color: '#96989d', fontSize: 12, marginTop: 8 }}>{t('loadingGif')}</div>}
+              style={{ width: '100%', padding: '7px 12px', background: '#21262d', border: 'none', borderRadius: 6, color: 'white', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            {gifLoading && <div style={{ color: '#8b949e', fontSize: 12, marginTop: 8 }}>{t('loadingGif')}</div>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, maxHeight: 180, overflowY: 'auto' }}>
               {gifResults.map(g => (
                 <img key={g.id} src={g.preview || g.url} alt={g.title} onClick={() => sendGif(g)}
@@ -610,9 +660,9 @@ export default function ChatPage() {
               🔇 Vous êtes muté — vous pouvez écrire dans {muteCountdown()}.
             </div>
           )}
-          <form onSubmit={send} style={{ display: 'flex', alignItems: 'center', background: '#383a40', borderRadius: 8, padding: '0 8px', gap: 4 }}>
+          <form onSubmit={send} style={{ display: 'flex', alignItems: 'center', background: '#21262d', borderRadius: 8, padding: '0 8px', gap: 4 }}>
             <button type="button" onClick={e => { e.stopPropagation(); setShowGif(prev => !prev); }} title="GIF"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: '0 4px', color: showGif ? '#5865f2' : '#96989d' }}>
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: '0 4px', color: showGif ? '#5865f2' : '#8b949e' }}>
               🎬
             </button>
             <input
@@ -623,7 +673,7 @@ export default function ChatPage() {
               style={{ flex: 1, padding: '11px 8px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none', cursor: isMuted ? 'not-allowed' : 'text', opacity: isMuted ? 0.5 : 1 }}
             />
             <button type="submit" disabled={!input.trim() || isMuted}
-              style={{ background: input.trim() && !isMuted ? '#5865f2' : 'transparent', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', color: input.trim() && !isMuted ? 'white' : '#96989d', fontWeight: 700, fontSize: 16, transition: 'background 0.1s' }}>
+              style={{ background: input.trim() && !isMuted ? '#5865f2' : 'transparent', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', color: input.trim() && !isMuted ? 'white' : '#8b949e', fontWeight: 700, fontSize: 16, transition: 'background 0.1s' }}>
               ➤
             </button>
           </form>
@@ -631,7 +681,7 @@ export default function ChatPage() {
       </div>
 
       {/* ═══════════════ MEMBERS SIDEBAR ═══════════════ */}
-      <aside style={{ width: 200, background: '#2b2d31', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #1e1f22', flexShrink: 0, overflowY: 'auto' }}
+      <aside style={{ width: 200, background: '#111318', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #1c2128', flexShrink: 0, overflowY: 'auto', color: '#e6edf3' }}
         onClick={e => e.stopPropagation()}>
 
         {(['owner', 'admin', 'member'] as const).map(role => {
@@ -641,15 +691,15 @@ export default function ChatPage() {
           const icon  = role === 'owner' ? '👑' : role === 'admin' ? '🛡️' : null;
           return (
             <div key={role}>
-              <div style={{ padding: '16px 12px 6px', fontSize: 11, fontWeight: 700, color: '#96989d', textTransform: 'uppercase', letterSpacing: 1 }}>
+              <div style={{ padding: '16px 12px 6px', fontSize: 11, fontWeight: 700, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1 }}>
                 {label} — {group.length}
               </div>
               {group.map(member => (
                 <div
                   key={member.id}
                   onClick={() => setActiveMenu(prev => prev?.member.id === member.id ? null : { member, x: 0, y: 0 })}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer', borderRadius: 4, margin: '1px 4px', position: 'relative', background: activeMenu?.member.id === member.id ? '#404249' : 'transparent' }}
-                  onMouseEnter={e => { if (activeMenu?.member.id !== member.id) (e.currentTarget as HTMLElement).style.background = '#35373c'; }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer', borderRadius: 4, margin: '1px 4px', position: 'relative', background: activeMenu?.member.id === member.id ? '#1c2128' : 'transparent' }}
+                  onMouseEnter={e => { if (activeMenu?.member.id !== member.id) (e.currentTarget as HTMLElement).style.background = '#1c2128'; }}
                   onMouseLeave={e => { if (activeMenu?.member.id !== member.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
                   <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarColor(member.id), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
@@ -658,18 +708,18 @@ export default function ChatPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {member.first_name} {member.name}
-                      {String(member.id) === String(me?.id) && <span style={{ color: '#96989d', fontSize: 10 }}> (vous)</span>}
+                      {String(member.id) === String(me?.id) && <span style={{ color: '#8b949e', fontSize: 10 }}> (vous)</span>}
                     </div>
                   </div>
                   {icon && <span style={{ fontSize: 13 }}>{icon}</span>}
 
                   {/* Inline dropdown when member is clicked */}
                   {activeMenu?.member.id === member.id && (
-                    <div style={{ position: 'absolute', top: 40, right: 4, background: '#111214', border: '1px solid #1e1f22', borderRadius: 8, padding: 6, zIndex: 200, minWidth: 150, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}
+                    <div style={{ position: 'absolute', top: 40, right: 4, background: '#0e1117', border: '1px solid #1c2128', borderRadius: 8, padding: 6, zIndex: 200, minWidth: 150, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}
                       onClick={e => e.stopPropagation()}>
                       {member.id !== me?.id && (
                         <button onClick={() => openDm(member.id)}
-                          style={menuBtnStyle('#96989d')}>
+                          style={menuBtnStyle('#8b949e')}>
                           💬 Envoyer DM
                         </button>
                       )}
@@ -700,7 +750,7 @@ export default function ChatPage() {
         <div style={overlayStyle} onClick={closeBan}>
           <div style={modalStyle} onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 8px' }}>🔨 Bannir {banTarget.first_name} {banTarget.name}</h3>
-            <p style={{ color: '#96989d', fontSize: 13, margin: '0 0 16px' }}>Choisissez la durée et la raison.</p>
+            <p style={{ color: '#8b949e', fontSize: 13, margin: '0 0 16px' }}>Choisissez la durée et la raison.</p>
 
             <label style={labelStyle}>DURÉE</label>
             <select value={banDuration} onChange={e => setBanDuration(e.target.value)} style={selectStyle}>
@@ -728,7 +778,7 @@ export default function ChatPage() {
         <div style={overlayStyle} onClick={() => { setMuteTarget(null); setMuteDuration('5min'); }}>
           <div style={modalStyle} onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 8px' }}>🔇 Muter {muteTarget.first_name} {muteTarget.name}</h3>
-            <p style={{ color: '#96989d', fontSize: 13, margin: '0 0 16px' }}>L'utilisateur ne pourra pas envoyer de messages pendant la durée choisie.</p>
+            <p style={{ color: '#8b949e', fontSize: 13, margin: '0 0 16px' }}>L'utilisateur ne pourra pas envoyer de messages pendant la durée choisie.</p>
 
             <label style={labelStyle}>DURÉE</label>
             <select value={muteDuration} onChange={e => setMuteDuration(e.target.value)} style={selectStyle}>
@@ -761,18 +811,18 @@ const overlayStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000,
 };
 const modalStyle: React.CSSProperties = {
-  background: '#1e1f22', borderRadius: 12, padding: 24, width: 380, maxWidth: '90vw',
+  background: '#1c2128', borderRadius: 12, padding: 24, width: 380, maxWidth: '90vw',
 };
 const labelStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: '#96989d', display: 'block',
+  fontSize: 11, fontWeight: 700, color: '#8b949e', display: 'block',
   marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1,
 };
 const selectStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 12px', background: '#383a40',
+  width: '100%', padding: '8px 12px', background: '#21262d',
   border: '1px solid #374151', borderRadius: 6, color: 'white',
   fontSize: 14, marginBottom: 4, boxSizing: 'border-box',
 };
 const btnSecondary: React.CSSProperties = {
-  padding: '8px 16px', background: '#383a40', border: 'none',
+  padding: '8px 16px', background: '#21262d', border: 'none',
   borderRadius: 6, color: 'white', cursor: 'pointer', fontWeight: 600,
 };

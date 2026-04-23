@@ -60,8 +60,26 @@ async function connectPostgres(maxAttempts = 12, delayMs = 3000) {
   }
 }
 
+async function ensureTables() {
+  // crée la table banned_users si elle n'existe pas encore (migration automatique)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS banned_users (
+      id         UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id    UUID        NOT NULL,
+      server_id  UUID        NOT NULL,
+      reason     TEXT,
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      CONSTRAINT banned_users_unique UNIQUE (user_id, server_id),
+      FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE,
+      FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
+    )
+  `);
+}
+
 async function startServer() {
   await connectPostgres();
+  await ensureTables();
 
   const httpServer = createServer(app);
   const io = new Server(httpServer, {

@@ -16,7 +16,7 @@ export const getServerByIdService = async (id) => {
 
 export const getServerByInviteCodeService = async (inviteCode) => {
   const result = await pool.query(
-    "SELECT * FROM Servers WHERE inviteCode = $1",
+    "SELECT * FROM Servers WHERE LOWER(invitecode) = LOWER($1)",
     [inviteCode]
   );
   return result.rows[0];
