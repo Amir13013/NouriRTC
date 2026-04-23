@@ -405,7 +405,14 @@
 <a name='L340'></a><a href='#L340'>340</a>
 <a name='L341'></a><a href='#L341'>341</a>
 <a name='L342'></a><a href='#L342'>342</a>
-<a name='L343'></a><a href='#L343'>343</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L343'></a><a href='#L343'>343</a>
+<a name='L344'></a><a href='#L344'>344</a>
+<a name='L345'></a><a href='#L345'>345</a>
+<a name='L346'></a><a href='#L346'>346</a>
+<a name='L347'></a><a href='#L347'>347</a>
+<a name='L348'></a><a href='#L348'>348</a>
+<a name='L349'></a><a href='#L349'>349</a>
+<a name='L350'></a><a href='#L350'>350</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -673,10 +680,12 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -689,12 +698,14 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -709,6 +720,7 @@
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -720,8 +732,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -772,7 +786,7 @@ const handleResponse = (res, status, message, data = null) =&gt; {
   res.status(status).json({ status, message, data });
 };
 &nbsp;
-// Déconnecte un utilisateur de tous les channels d'un serveur via Socket.IO
+// Déconnexion utilisateur  via Socket.IO
 const disconnectUserFromServer = <span class="fstat-no" title="function not covered" >as</span>ync (io, userId, serverId, eventName) =&gt; {
   const channels = <span class="cstat-no" title="statement not covered" >await getAllChannelByServerIdService(serverId);</span>
   const channelIds = <span class="cstat-no" title="statement not covered" >channels.map(<span class="fstat-no" title="function not covered" >c </span>=&gt; <span class="cstat-no" title="statement not covered" >String(c.id))</span>;</span>
@@ -783,7 +797,7 @@ const disconnectUserFromServer = <span class="fstat-no" title="function not cove
 <span class="cstat-no" title="statement not covered" >      for (const channelId of channelIds) {</span>
 <span class="cstat-no" title="statement not covered" >        await s.leave(channelId);</span>
       }
-      // Notifie le client PUIS coupe la connexion socket immédiatement
+      // Notification client + connexion socket
 <span class="cstat-no" title="statement not covered" >      s.emit(eventName, { serverId, userId });</span>
 <span class="cstat-no" title="statement not covered" >      s.disconnect(true);</span>
     }
@@ -877,7 +891,7 @@ export const getAllChannelByServerId = async (req, res, next) =&gt; {
   }
 };
 &nbsp;
-// DELETE
+// Supprimer un user du serveur xz
 export const deleteUserFromServer = async (req, res, next) =&gt; {
   try {
     const { serverId } = req.params;
@@ -903,7 +917,7 @@ export const deleteServerById = async (req, res, next) =&gt; {
   }
 };
 &nbsp;
-// CREATE
+// creation du serveur 
 export const createServer = async (req, res, next) =&gt; {
   try {
     const { name } = req.body;
@@ -936,7 +950,7 @@ export const createChannelByServerId = async (req, res, next) =&gt; {
 export const muteUser = async (req, res, next) =&gt; {
   try {
     const { serverId, userId } = req.params;
-    const { duration } = req.body; // duration in ms
+    const { duration } = req.body; 
 &nbsp;
     if (!duration || typeof duration !== 'number' || duration &lt;= 0) {
       return handleResponse(res, 400, 'duration (ms) is required');
@@ -944,7 +958,7 @@ export const muteUser = async (req, res, next) =&gt; {
 &nbsp;
     const expiresAt = await muteUserService(userId, serverId, duration);
 &nbsp;
-    // Notify the muted user via socket so their UI updates immediately
+    
     const io = req.app.get('io');
     <span class="missing-if-branch" title="if path not taken" >I</span>if (io) {
       const sockets = <span class="cstat-no" title="statement not covered" >await io.fetchSockets();</span>
@@ -1015,28 +1029,32 @@ export const updateMemberRole = async (req, res, next) =&gt; {
 export const kickUserFromServer = async (req, res, next) =&gt; {
   try {
     const { serverId, userId } = req.params;
-    const requesterRole = req.userRole; // injecté par le middleware checkRole
+    // le rôle de celui qui kick — mis dans la requête par le middleware checkRole
+    const requesterRole = req.userRole;
 &nbsp;
-    // Vérifier que la cible est dans le serveur
+    // je vérifie le rôle de la cible dans ce serveur
     const targetRole = await getUserRoleInServerService(serverId, userId);
+    // la cible n'est même pas dans le serveur → 404
     if (!targetRole) return handleResponse(res, 404, "User not found in this server");
 &nbsp;
-    // Règle : on ne peut pas kick le owner
+    // on peut jamais kick l'owner, même si on est admin
     if (targetRole.role === 'owner') {
       return handleResponse(res, 403, "Cannot kick the owner");
     }
 &nbsp;
-    // Règle admin vs admin : seul le owner peut kick un admin
+    // un admin ne peut pas kicker un autre admin, seul l'owner peut
     if (targetRole.role === 'admin' &amp;&amp; requesterRole !== 'owner') {
       return handleResponse(res, 403, "Only the owner can kick an admin");
     }
 &nbsp;
+    // je supprime l'utilisateur de la table users_servers
     const deleted = await deleteUserFromServerService(userId, serverId);
     if (!deleted) return handleResponse(res, 404, "User not found in this server");
 &nbsp;
-    // Socket.IO : sortir l'utilisateur des channels du serveur
+    // je récupère l'instance Socket.IO pour déconnecter l'user en temps réel
     const io = req.app.get('io');
     <span class="missing-if-branch" title="if path not taken" >I</span>if (io) {
+      // je lui envoie l'événement "member:kicked" et je coupe sa connexion socket direct
 <span class="cstat-no" title="statement not covered" >      await disconnectUserFromServer(io, userId, serverId, 'member:kicked');</span>
     }
 &nbsp;
@@ -1051,32 +1069,35 @@ export const banUserFromServer = async (req, res, next) =&gt; {
   try {
     const { serverId, userId } = req.params;
     const { reason, expiresAt } = req.body;
-    const requesterRole = req.userRole; // injecté par le middleware checkRole
+    // le rôle de celui qui banne — mis dans la requête par checkRole
+    const requesterRole = req.userRole;
 &nbsp;
-    // Déjà banni ?
+    // je vérifie qu'il n'est pas déjà banni → évite les doublons
     const alreadyBanned = await isUserBannedFromServerService(userId, serverId);
     if (alreadyBanned) {
       return handleResponse(res, 400, "User is already banned from this server");
     }
 &nbsp;
-    // Vérifier le rôle de la cible si elle est dans le serveur
+    // je vérifie le rôle de la cible si elle est dans le serveur
     const targetRole = await getUserRoleInServerService(serverId, userId);
     if (targetRole) {
+      // on peut jamais bannir l'owner
       if (targetRole.role === 'owner') {
         return handleResponse(res, 403, "Cannot ban the owner");
       }
+      // un admin ne peut pas bannir un autre admin, seul l'owner peut
       if (targetRole.role === 'admin' &amp;&amp; requesterRole !== 'owner') {
         return handleResponse(res, 403, "Only the owner can ban an admin");
       }
-      // Supprimer du serveur avant de bannir
+      // je le vire du serveur d'abord, puis j'enregistre le ban
       await deleteUserFromServerService(userId, serverId);
     }
 &nbsp;
-    // Enregistrer le ban (permanent si expiresAt absent, temporaire sinon)
+    // j'enregistre le ban en base — permanent si pas de date, temporaire sinon
     const banned = await banUserFromServerService(userId, serverId, reason || null, expiresAt || null);
     if (!banned) return handleResponse(res, 500, "Failed to ban user");
 &nbsp;
-    // Socket.IO : déconnecter immédiatement si l'utilisateur était connecté
+    // s'il était connecté → je coupe sa connexion socket immédiatement
     if (targetRole) {
       const io = req.app.get('io');
       <span class="missing-if-branch" title="if path not taken" >I</span>if (io) {
@@ -1096,7 +1117,7 @@ export const banUserFromServer = async (req, res, next) =&gt; {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-22T12:02:50.884Z
+                at 2026-04-23T20:22:22.377Z
             </div>
         <script src="../prettify.js"></script>
         <script>

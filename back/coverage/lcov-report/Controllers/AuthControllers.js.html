@@ -148,7 +148,20 @@
 <a name='L83'></a><a href='#L83'>83</a>
 <a name='L84'></a><a href='#L84'>84</a>
 <a name='L85'></a><a href='#L85'>85</a>
-<a name='L86'></a><a href='#L86'>86</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -163,9 +176,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -184,24 +201,33 @@
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -245,11 +271,14 @@ const handleResponse = (res, status, message, data = null) =&gt; {
 &nbsp;
 export const createUser = async (req, res, next) =&gt; {
   try {
-    
+    // je récupère ce que l'utilisateur a rempli dans le formulaire
     const {name, first_name, phone_number, mail, password} = req.body;
     const saltRounds = 12;
+    // je hash le mot de passe avec bcrypt — jamais stocké en clair dans la BDD
+    // 12 rounds = niveau de sécurité, plus c'est haut plus c'est lent à craquer
     const hashedPassword = await bcrypt.hash(password, saltRounds)
-    
+&nbsp;
+    // j'insère le nouvel utilisateur en base PostgreSQL avec le mot de passe hashé
     const newUser = await createUserService(
       name,
       first_name,
@@ -257,9 +286,10 @@ export const createUser = async (req, res, next) =&gt; {
       mail,
       hashedPassword,
     );
-    
+&nbsp;
+    // tout s'est bien passé → je renvoie 201 (créé) avec les données du nouvel user
     handleResponse(res, 201, "User created successfully", newUser);
-    
+&nbsp;
   } catch (error) {
     next(error);
   }
@@ -269,29 +299,38 @@ export const login = async (req, res) =&gt; {
   try {
     const { mail, password } = req.body;
 &nbsp;
+    // si l'un des deux champs est absent → pas la peine de chercher en base
     if (!mail || !password) {
       return res.status(400).json({ message: "Champs manquants" });
     }
 &nbsp;
+    // je cherche l'utilisateur par son email dans PostgreSQL
     const user = await getUserByMailService(mail);
 &nbsp;
+    // aucun user trouvé avec cet email → on refuse
     if (!user) {
       return res.status(401).json({ message: "Utilisateur non trouvé" });
     }
 &nbsp;
+    // je compare le mot de passe tapé avec le hash stocké en base
+    // bcrypt.compare fait ça de façon sécurisée, impossible de tricher
     const isValid = await bcrypt.compare(password, user.password);
 &nbsp;
+    // mot de passe incorrect → on refuse
     if (!isValid) {
       return res.status(401).json({ message: "Mot de passe incorrect" });
     }
 &nbsp;
+    // je prépare les infos à mettre dans le token (pas le mot de passe !)
     const payload = { id: user.id, mail: user.mail, name: user.name, first_name: user.first_name };
+    // je génère le token JWT signé avec ma clé secrète, valable 6h
     const accessToken = jwt.sign(
       payload,
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "6h" }
     );
 &nbsp;
+    // tout est bon → je renvoie le token + les infos de l'utilisateur au frontend
     return res.status(200).json({
       success: true,
       accessToken,
@@ -325,7 +364,7 @@ export const getUser = async (req, res, next) =&gt; {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-22T12:02:50.884Z
+                at 2026-04-23T20:22:22.377Z
             </div>
         <script src="../prettify.js"></script>
         <script>
