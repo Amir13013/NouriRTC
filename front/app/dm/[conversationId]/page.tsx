@@ -118,7 +118,7 @@ export default function DmChatPage() {
         if (senderName) {
           new Notification(senderName, {
             body: data.content?.length > 100 ? data.content.slice(0, 100) + '…' : data.content,
-            icon: '/logo-icon.png',
+            icon: '/boka-logo.svg',
             tag: 'dm-msg',
           });
         }

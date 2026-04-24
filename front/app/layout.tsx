@@ -1,7 +1,7 @@
 import '../styles/globals.css';
 
 export const metadata = {
-  title: 'Let Us Link',
+  title: 'BOKA',
   description: 'Messagerie temps réel',
 };
 

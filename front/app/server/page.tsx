@@ -51,7 +51,7 @@ export default function ServerPage() {
       }}>
         {/* Logo */}
         <div style={{ marginBottom: 8 }}>
-          <Image src="/logo-icon.png" alt="Let Us Link" width={44} height={44} />
+          <Image src="/boka-logo.svg" alt="BOKA" width={110} height={37} style={{ borderRadius: 8 }} />
         </div>
         <div style={{ width: 32, height: 1, background: '#21262d', margin: '4px 0' }} />
 

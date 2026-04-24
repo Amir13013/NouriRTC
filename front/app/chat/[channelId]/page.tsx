@@ -183,7 +183,7 @@ export default function ChatPage() {
         const isGifMsg = /^https?:\/\/(media[0-9]*\.giphy\.com|i\.giphy\.com)/.test(data.msg);
         new Notification(data.sender || 'Nouveau message', {
           body: isGifMsg ? 'a envoyé un GIF' : (data.msg.length > 100 ? data.msg.slice(0, 100) + '…' : data.msg),
-          icon: '/logo-icon.png',
+          icon: '/boka-logo.svg',
           tag: 'channel-msg',
         });
       }

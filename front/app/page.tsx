@@ -24,10 +24,10 @@ export default function HomePage() {
 
       {/* Logo + Title */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-        <Image src="/logo-icon.png" alt="Let Us Link" width={140} height={140}
-          style={{ filter: 'drop-shadow(0 0 24px rgba(88,101,242,0.5))' }} />
+        <Image src="/boka-logo.svg" alt="BOKA" width={280} height={93}
+          style={{ filter: 'drop-shadow(0 0 24px rgba(88,101,242,0.4))', borderRadius: 18 }} />
         <h1 style={{ fontSize: 44, fontWeight: 800, letterSpacing: -1.5, color: '#e6edf3', margin: 0 }}>
-          Let Us <span style={{ color: '#5865f2' }}>Link</span>
+          BO<span style={{ color: '#5865f2' }}>KA</span>
         </h1>
       </div>
 
@@ -36,7 +36,7 @@ export default function HomePage() {
         fontSize: 18, color: '#8b949e', marginBottom: 48,
         textAlign: 'center', maxWidth: 500, lineHeight: 1.7,
       }}>
-        La messagerie temps réel pour vos communautés.<br />
+        La messagerie temps réel pour vos communautés.<br/>
         Serveurs, channels, messages privés — tout en un.
       </p>
 
