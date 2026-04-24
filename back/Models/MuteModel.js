@@ -27,7 +27,6 @@ export const isUserMutedService = async (userId, serverId) => {
     expiresAt: { $gt: new Date() },
   });
   if (mute) return { muted: true, expiresAt: mute.expiresAt };
-  // clean up expired record if any
   await MuteRecord.deleteOne({ userId: String(userId), serverId: String(serverId) });
   return { muted: false };
 };

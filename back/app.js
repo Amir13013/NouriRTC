@@ -37,31 +37,23 @@ app.use('/translate', Translate);
 setupSwagger(app);
 app.use(some_error);
 
-// PostgreSQL dans Docker met du temps à démarrer au premier lancement
-// sans ce retry, le backend crashait direct avec "ENOTFOUND db"
-// ici je réessaie jusqu'à 12 fois avec 3 secondes entre chaque tentative
+// PostgreSQL dans Docker met du temps à démarrer — retry jusqu'à 12 fois avant d'abandonner
 async function connectPostgres(maxAttempts = 12, delayMs = 3000) {
   for (let i = 1; i <= maxAttempts; i++) {
     try {
       const client = await pool.connect();
-      client.release(); // je libère la connexion de test, c'était juste pour vérifier
+      client.release();
       console.log('Connecté à PostgreSQL');
       return;
     } catch (err) {
-      if (i === maxAttempts) {
-        // après 12 tentatives → impossible de se connecter → on arrête tout
-        console.error('PostgreSQL inaccessible après plusieurs tentatives :', err.message);
-        process.exit(1);
-      }
+      if (i === maxAttempts) { console.error('PostgreSQL inaccessible :', err.message); process.exit(1); }
       console.log(`PostgreSQL non prêt (tentative ${i}/${maxAttempts}), nouvel essai dans ${delayMs / 1000}s…`);
-      // j'attends 3 secondes avant de réessayer
       await new Promise(r => setTimeout(r, delayMs));
     }
   }
 }
 
 async function ensureTables() {
-  // crée la table banned_users si elle n'existe pas encore (migration automatique)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS banned_users (
       id         UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -82,9 +74,7 @@ async function startServer() {
   await ensureTables();
 
   const httpServer = createServer(app);
-  const io = new Server(httpServer, {
-    cors: { origin: '*' },
-  });
+  const io = new Server(httpServer, { cors: { origin: '*' } });
 
   app.set('io', io);
 
@@ -94,24 +84,19 @@ async function startServer() {
     io.to(channelId).emit('channel users', { channelId, users });
   };
 
-  // userId → nombre de sockets actives (pour gérer plusieurs onglets)
+  // Map userId → nombre de sockets actives (supporte plusieurs onglets ouverts simultanément)
   const onlineUsers = new Map();
 
   io.on('connection', (socket) => {
     let displayName;
 
     try {
-      // le frontend envoie le token JWT lors de la connexion socket
       const token = socket.handshake.auth?.token;
-      // pas de token → je refuse la connexion direct
       if (!token) return socket.disconnect();
 
-      // je vérifie et décode le token — même sécurité que les routes HTTP
       socket.user = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-      // je stocke l'ID de l'user dans les données du socket pour y accéder plus tard
       socket.data.userId = socket.user.id;
 
-      // je construis le nom affiché : prénom en priorité, sinon nom, sinon un ID court
       displayName =
         (socket.user?.first_name && String(socket.user.first_name).trim()) ||
         (socket.user?.name && String(socket.user.name).trim()) ||
@@ -120,12 +105,10 @@ async function startServer() {
       socket.data.displayName = displayName;
       socket.emit('system', `Bienvenue ${displayName} !`);
 
-      // Marquer en ligne — incrémente le compteur pour supporter plusieurs onglets
       const uid = String(socket.user.id);
       onlineUsers.set(uid, (onlineUsers.get(uid) || 0) + 1);
       io.emit('user:status', { userId: uid, online: true });
     } catch {
-      // token invalide ou expiré → on coupe la connexion socket
       return socket.disconnect();
     }
 
@@ -133,18 +116,14 @@ async function startServer() {
       const room = String(channelId || '').trim();
       if (!room) return;
       socket.data.channelId = room;
-      // l'utilisateur entre dans la "room" Socket.IO de ce channel
       await socket.join(room);
-      // je notifie les autres membres que quelqu'un a rejoint
       socket.to(room).emit('system', `${displayName} a rejoint le channel`);
-      // je mets à jour la liste des utilisateurs connectés dans ce channel
       await updateUsers(room);
     });
 
     socket.on('leave channel', async (channelId) => {
       const room = String(channelId || '').trim();
       if (!room) return;
-      // l'utilisateur quitte la room → il ne recevra plus les messages de ce channel
       await socket.leave(room);
       if (socket.data.channelId === room) socket.data.channelId = null;
       socket.to(room).emit('system', `${displayName} a quitté le channel`);
@@ -159,40 +138,27 @@ async function startServer() {
 
         const userId = socket.user.id;
 
-        // je vérifie que ce channel appartient bien à un serveur existant
-        const channelRes = await pool.query(
-          'SELECT server_id FROM channels WHERE id = $1', [room]
-        );
+        const channelRes = await pool.query('SELECT server_id FROM channels WHERE id = $1', [room]);
         if (channelRes.rows.length === 0) return;
         const serverIdOfChannel = channelRes.rows[0].server_id;
 
-        // je vérifie que l'utilisateur est bien membre du serveur
-        // si non → je le déconnecte direct (il a pas le droit d'être là)
         const memberRes = await pool.query(
           'SELECT 1 FROM users_servers WHERE user_id = $1 AND server_id = $2',
           [userId, serverIdOfChannel]
         );
         if (memberRes.rows.length === 0) { socket.disconnect(true); return; }
 
-        // je vérifie si l'utilisateur est mute avant d'envoyer
-        // vérification côté serveur → impossible à contourner côté client
         const muteStatus = await isUserMutedService(userId, serverIdOfChannel);
-        if (muteStatus.muted) {
-          // il est mute → je lui renvoie l'événement avec la date de fin de mute
-          socket.emit('system:muted', { expiresAt: muteStatus.expiresAt });
-          return;
-        }
+        if (muteStatus.muted) { socket.emit('system:muted', { expiresAt: muteStatus.expiresAt }); return; }
 
-        // je sauvegarde le message dans MongoDB avant de le diffuser
         const savedMessage = await createMessageService(userId, room, message);
 
-        // j'envoie le message à TOUS les gens dans ce channel (y compris l'expéditeur)
         io.to(room).emit('channel message', {
           _id:       String(savedMessage._id),
           channelId: savedMessage.channelId,
           msg:       savedMessage.content,
-          sender:    displayName,   // nom de l'expéditeur pour l'affichage
-          senderId:  String(userId), // ID pour savoir si c'est "mon" message côté frontend
+          sender:    displayName,
+          senderId:  String(userId),
           createdAt: savedMessage.createdAt,
         });
       } catch (error) {
@@ -217,12 +183,10 @@ async function startServer() {
       if (room) await updateUsers(room);
     });
 
-    // Envoie la liste complète des users en ligne au client qui la demande
     socket.on('users:getOnline', () => {
       socket.emit('users:online', Array.from(onlineUsers.keys()));
     });
 
-    // ── Modular socket event handlers ───────────────────────────────
     registerMessageEditEvents(socket, io);
     registerReactionEvents(socket, io);
     registerDmEvents(socket, io);

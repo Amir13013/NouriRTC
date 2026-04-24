@@ -1,6 +1,5 @@
 import pool from "../Config/DataBase.js";
 
-// GET
 export const getAllServerService = async () => {
   const result = await pool.query("SELECT * FROM Servers");
   return result.rows;
@@ -61,7 +60,6 @@ export const getUserRoleInServerService = async (serverId, userId) => {
   return result.rows[0];
 };
 
-// DELETE
 export const deleteUserFromServerService = async (userID, serverID) => {
   const result = await pool.query(
     `DELETE FROM users_servers WHERE user_id = $1 AND server_id = $2`,
@@ -78,7 +76,6 @@ export const deleteServerByIdService = async (serverID) => {
   return result.rowCount;
 };
 
-// CREATE
 export const createServerService = async (name, ownerId, inviteCode) => {
   const client = await pool.connect();
   try {
@@ -88,8 +85,7 @@ export const createServerService = async (name, ownerId, inviteCode) => {
       [name, ownerId, inviteCode]
     );
     const newServer = result.rows[0];
-    // ON CONFLICT ensures the owner row is always set to 'owner' even if a
-    // stale 'member' row somehow exists for this user+server combination.
+    // ON CONFLICT ensures the owner row is always 'owner' even if a stale 'member' row exists
     await client.query(
       `INSERT INTO users_servers (user_id, server_id, role)
        VALUES ($1, $2, 'owner')
@@ -127,7 +123,6 @@ export const addUserToServerService = async (userId, serverId) => {
   return result.rows[0];
 };
 
-// PUT
 export const updateMemberRoleService = async (serverId, userId, role) => {
   const result = await pool.query(
     `UPDATE users_servers SET role = $1 WHERE server_id = $2 AND user_id = $3 RETURNING *`,
@@ -144,7 +139,6 @@ export const updateServerService = async (serverId, name) => {
   return result.rows[0];
 };
 
-// BAN
 export const banUserFromServerService = async (userId, serverId, reason = null, expiresAt = null) => {
   const result = await pool.query(
     `INSERT INTO banned_users (user_id, server_id, reason, expires_at)

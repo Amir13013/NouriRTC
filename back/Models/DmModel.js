@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const conversationSchema = new mongoose.Schema({
-  participants: [{ type: String, required: true }], // user IDs (PostgreSQL UUIDs)
+  participants: [{ type: String, required: true }],
 }, { timestamps: true });
 
 const dmMessageSchema = new mongoose.Schema({
@@ -13,7 +13,6 @@ const dmMessageSchema = new mongoose.Schema({
 export const Conversation = mongoose.model('Conversation', conversationSchema);
 export const DmMessage    = mongoose.model('DmMessage', dmMessageSchema);
 
-// Crée ou récupère la conversation entre deux users
 export const getOrCreateConversation = async (userId1, userId2) => {
   const sorted = [String(userId1), String(userId2)].sort();
   let conv = await Conversation.findOne({ participants: { $all: sorted, $size: 2 } });
@@ -21,12 +20,10 @@ export const getOrCreateConversation = async (userId1, userId2) => {
   return conv;
 };
 
-// Enregistre un message DM
 export const sendDmMessageService = async (conversationId, senderId, content) => {
   return DmMessage.create({ conversationId, senderId, content });
 };
 
-// Récupère les messages d'une conversation
 export const getDmMessagesService = async (conversationId) => {
   return DmMessage.find({ conversationId }).sort({ createdAt: 1 });
 };

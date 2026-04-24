@@ -1,13 +1,12 @@
 import { getOrCreateConversation, getDmMessagesService, Conversation } from '../Models/DmModel.js';
 import pool from '../Config/DataBase.js';
 
-// GET /dm/conversations — liste les conversations de l'user connecté
+
 export const listConversations = async (req, res, next) => {
   try {
     const userId = String(req.user.id);
     const convs  = await Conversation.find({ participants: userId }).sort({ updatedAt: -1 });
 
-    // pour chaque conv, je récupère les infos de l'autre participant depuis PostgreSQL
     const result = await Promise.all(convs.map(async (c) => {
       const otherId = c.participants.find(p => p !== userId);
       let otherUser = null;
@@ -22,7 +21,6 @@ export const listConversations = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// POST /dm/conversations — crée ou récupère une conversation avec targetUserId
 export const createConversation = async (req, res, next) => {
   try {
     const userId   = String(req.user.id);
@@ -42,7 +40,6 @@ export const createConversation = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /dm/conversations/:id/messages — messages d'une conversation
 export const getMessages = async (req, res, next) => {
   try {
     const messages = await getDmMessagesService(req.params.id);
@@ -50,7 +47,6 @@ export const getMessages = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// GET /dm/users/search?q= — recherche d'utilisateurs
 export const searchUsers = async (req, res, next) => {
   try {
     const q = (req.query.q || '').trim();
