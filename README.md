@@ -1,4 +1,4 @@
-# Let Us Link
+# BOKA
 
 Application de messagerie temps réel inspirée de Discord — serveurs, channels, messages privés, modération, GIFs, traduction automatique et application desktop.
 

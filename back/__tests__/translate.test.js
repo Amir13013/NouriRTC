@@ -29,18 +29,17 @@ describe('translateText utility', () => {
   it('calls LibreTranslate and returns translated text', async () => {
     fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ translatedText: 'Hello' }),
+      json: async () => ({ translatedText: 'Hello everyone' }),
     });
 
-    // Use unique text to avoid cache collision with other tests
-    const result = await translateText('Salut monde', 'en');
+    const result = await translateText('Salut tout le monde', 'en');
 
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch).toHaveBeenCalledWith(
       'https://libretranslate.de/translate',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ q: 'Salut monde', source: 'fr', target: 'en', format: 'text' }),
+        body: JSON.stringify({ q: 'Salut tout le monde', source: 'fr', target: 'en', format: 'text' }),
       })
     );
     expect(result).toBe('Hello');
@@ -52,17 +51,17 @@ describe('translateText utility', () => {
       status: 500,
     });
 
-    // Unique text to avoid cache hit
-    const result = await translateText('Au revoir monde', 'en');
-    expect(result).toBe('Au revoir monde');
+    
+    const result = await translateText('Au revoir tout le monde', 'en');
+    expect(result).toBe('Au revoir tout le monde');
   });
 
   it('falls back to original text when fetch throws (network error)', async () => {
     fetch.mockRejectedValueOnce(new Error('Network failure'));
 
-    // Unique text to avoid cache hit
-    const result = await translateText('Bonne nuit monde', 'es');
-    expect(result).toBe('Bonne nuit monde');
+    
+    const result = await translateText('Bonne nuit tout le monde', 'es');
+    expect(result).toBe('Bonne nuit tout le monde');
   });
 
   it('returns original when translatedText is falsy in response', async () => {
@@ -71,9 +70,7 @@ describe('translateText utility', () => {
       json: async () => ({ translatedText: null }),
     });
 
-    // Unique text to avoid cache hit
     const result = await translateText('Nouveau texte unique', 'en');
-    // null translatedText → falls back to original
     expect(result).toBe('Nouveau texte unique');
   });
 
@@ -83,7 +80,6 @@ describe('translateText utility', () => {
       json: async () => ({ translatedText: 'Thank you' }),
     });
 
-    // Unique text so it's definitely not in cache from earlier tests
     const first = await translateText('Merci beaucoup monsieur', 'en');
     const second = await translateText('Merci beaucoup monsieur', 'en');
 

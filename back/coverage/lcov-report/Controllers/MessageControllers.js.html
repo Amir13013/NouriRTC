@@ -117,20 +117,7 @@
 <a name='L52'></a><a href='#L52'>52</a>
 <a name='L53'></a><a href='#L53'>53</a>
 <a name='L54'></a><a href='#L54'>54</a>
-<a name='L55'></a><a href='#L55'>55</a>
-<a name='L56'></a><a href='#L56'>56</a>
-<a name='L57'></a><a href='#L57'>57</a>
-<a name='L58'></a><a href='#L58'>58</a>
-<a name='L59'></a><a href='#L59'>59</a>
-<a name='L60'></a><a href='#L60'>60</a>
-<a name='L61'></a><a href='#L61'>61</a>
-<a name='L62'></a><a href='#L62'>62</a>
-<a name='L63'></a><a href='#L63'>63</a>
-<a name='L64'></a><a href='#L64'>64</a>
-<a name='L65'></a><a href='#L65'>65</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L55'></a><a href='#L55'>55</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -141,7 +128,6 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -149,7 +135,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -165,12 +150,9 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -182,9 +164,7 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -199,13 +179,9 @@
   toggleReactionService,
 } from '../Models/MessageModel.js';
 &nbsp;
-// ces controllers sont les routes HTTP — distinct des événements Socket.IO
-// les messages en temps réel passent par socket, mais ces routes existent aussi pour le REST API
-&nbsp;
 export const createMessage = async (req, res, next) =&gt; {
   try {
     const { channelId, content } = req.body;
-    // req.user.id vient du token JWT décodé par le middleware authenticate
     const newMessage = await createMessageService(req.user.id, channelId, content);
     res.status(201).json({ message: "Message créé avec succès", data: newMessage });
   } catch (error) { next(error); }
@@ -213,7 +189,6 @@ export const createMessage = async (req, res, next) =&gt; {
 &nbsp;
 export const getMessagesByChannel = async (req, res, next) =&gt; {
   try {
-    // je récupère tous les messages d'un channel depuis MongoDB, triés par date
     const messages = await getMessagesByChannelService(req.params.channelId);
     res.status(200).json({ message: "Messages récupérés avec succès", data: messages });
   } catch (error) { next(error); }
@@ -229,13 +204,10 @@ export const deleteMessage = async (req, res, next) =&gt; {
 export const editMessage = async (req, res, next) =&gt; {
   try {
     const { content } = req.body;
-    // .trim() → je vire les espaces inutiles avant de vérifier si c'est vide
     if (!content?.trim()) return res.status(400).json({ message: "Contenu vide" });
-    // le service vérifie que c'est bien l'auteur qui édite — si non → erreur "Non autorisé"
     const updated = await editMessageService(req.params.messageId, req.user.id, content.trim());
     res.status(200).json({ message: "Message modifié", data: updated });
   } catch (error) {
-    // j'intercepte les erreurs métier connues pour renvoyer le bon code HTTP
     if (error.message === "Non autorisé") return res.status(403).json({ message: error.message });
     <span class="missing-if-branch" title="else path not taken" >E</span>if (error.message === "Message non trouvé") return res.status(404).json({ message: error.message });
 <span class="cstat-no" title="statement not covered" >    next(error);</span>
@@ -246,9 +218,7 @@ export const reactToMessage = async (req, res, next) =&gt; {
   try {
     const { emoji } = req.body;
     if (!emoji) return res.status(400).json({ message: "Emoji requis" });
-    // toggleReactionService gère le toggle : ajoute si pas encore réagi, retire sinon
     const updated = await toggleReactionService(req.params.messageId, req.user.id, emoji);
-    // je renvoie juste le tableau de réactions mis à jour (pas tout le message)
     res.status(200).json({ message: "Réaction mise à jour", data: updated.reactions });
   } catch (error) {
     <span class="missing-if-branch" title="else path not taken" >E</span>if (error.message === "Message non trouvé") return res.status(404).json({ message: error.message });
@@ -262,7 +232,7 @@ export const reactToMessage = async (req, res, next) =&gt; {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-23T20:22:22.377Z
+                at 2026-04-24T12:24:54.405Z
             </div>
         <script src="../prettify.js"></script>
         <script>

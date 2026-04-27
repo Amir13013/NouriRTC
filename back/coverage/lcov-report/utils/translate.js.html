@@ -109,37 +109,17 @@
 <a name='L44'></a><a href='#L44'>44</a>
 <a name='L45'></a><a href='#L45'>45</a>
 <a name='L46'></a><a href='#L46'>46</a>
-<a name='L47'></a><a href='#L47'>47</a>
-<a name='L48'></a><a href='#L48'>48</a>
-<a name='L49'></a><a href='#L49'>49</a>
-<a name='L50'></a><a href='#L50'>50</a>
-<a name='L51'></a><a href='#L51'>51</a>
-<a name='L52'></a><a href='#L52'>52</a>
-<a name='L53'></a><a href='#L53'>53</a>
-<a name='L54'></a><a href='#L54'>54</a>
-<a name='L55'></a><a href='#L55'>55</a>
-<a name='L56'></a><a href='#L56'>56</a>
-<a name='L57'></a><a href='#L57'>57</a>
-<a name='L58'></a><a href='#L58'>58</a>
-<a name='L59'></a><a href='#L59'>59</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L47'></a><a href='#L47'>47</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -167,38 +147,26 @@
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// je garde en mémoire les traductions déjà faites pour éviter de rappeler l'API
-// clé = "texte|langue", valeur = texte traduit
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// cache: évite de rappeler l'API pour un texte déjà traduit — clé = "texte|langue"
 const cache = new Map();
 &nbsp;
 export const translateText = async (text, target) =&gt; {
-  // texte vide → rien à traduire
   if (!text?.trim()) return text;
-  // déjà en français → je retourne direct sans appeler l'API
   if (target === 'fr') return text;
 &nbsp;
-  // je construis une clé unique pour ce texte + cette langue
   const cacheKey = `${text}|${target}`;
-  // si j'ai déjà traduit ce texte dans cette langue → je renvoie depuis le cache
-  // ça évite de payer des appels API inutiles
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 &nbsp;
   try {
-    // j'appelle l'API LibreTranslate (gratuite et open source)
-    // je mets un timeout de 6 secondes — si l'API répond pas → on abandonne proprement
-    // liste de fallbacks : on essaie dans l'ordre jusqu'à ce qu'un réponde
+    // liste de fallbacks — on essaie dans l'ordre jusqu'à ce qu'un endpoint réponde
     const ENDPOINTS = [
       'https://translate.argosopentech.com/translate',
       'https://translate.fedilab.app/translate',
@@ -215,7 +183,7 @@ export const translateText = async (text, target) =&gt; {
           body: JSON.stringify({ q: text, source: 'fr', target, format: 'text', api_key: '' }),
           signal: AbortSignal.timeout(6000),
         });
-        if (res.ok) break; // on a trouvé un endpoint qui répond
+        if (res.ok) break;
         lastErr = new Error(`HTTP ${res.status} from ${url}`);
       } catch (e) {
         lastErr = e;
@@ -225,14 +193,10 @@ export const translateText = async (text, target) =&gt; {
     if (!res?.ok) throw lastErr ?? <span class="branch-1 cbranch-no" title="branch not covered" >new Error('all endpoints failed');</span>
 &nbsp;
     const data = await res.json();
-    // si la traduction est vide pour une raison quelconque → je garde le texte original
     const translated = data.translatedText || text;
-    // je mets en cache pour les prochains appels avec le même texte
     cache.set(cacheKey, translated);
     return translated;
   } catch (err) {
-    // n'importe quelle erreur (timeout, réseau, API down) → je retourne le texte original
-    // l'app ne plante pas, juste le texte reste en français
     console.warn(`[translate] ${err.message} — returning original text`);
     return text;
   }
@@ -244,7 +208,7 @@ export const translateText = async (text, target) =&gt; {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-23T20:22:22.377Z
+                at 2026-04-24T12:24:54.405Z
             </div>
         <script src="../prettify.js"></script>
         <script>
